@@ -30,7 +30,7 @@ public class UI_ElementAnimation : MonoBehaviour, IPointerEnterHandler, IPointer
         StopAllCoroutines();
         StartCoroutine(ScaleTo(startScale * scaleMultiplier, changingColor, GetMultiplierDeltaBetweenScales() * changingTime));
 
-        SoundController.PlatAudioClip("ButtonInteraction");
+        SoundController.PlayAudioClip("ButtonInteraction");
     }
 
     public void OnPointerExit(PointerEventData eventData)

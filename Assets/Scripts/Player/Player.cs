@@ -14,7 +14,7 @@ public class Player : MonoBehaviour
 
     private float laneOffset = 2.7f;
     public float laneChangeSpeed = 7f;
-    
+
     public float pointStart;
     public float pointFinish;
     public float startPositionZ;
@@ -36,24 +36,9 @@ public class Player : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         pointFinish = transform.position.z;
         startPositionZ = transform.position.z;
-
         StartGame();
     }
 
-    //void Update()
-    //{
-    //    if (isDead)
-    //        return;
-    //    if (Input.GetKeyDown(KeyCode.W) && (pointFinish - 1f > startPositionZ - laneOffset) && isMoving == false)
-    //    {
-    //        MoveHorizontal(-laneChangeSpeed);
-    //    }
-    //    if (Input.GetKeyDown(KeyCode.S) && (pointFinish + 1f < startPositionZ + laneOffset) && (isMoving == false))
-    //    {
-    //        MoveHorizontal(laneChangeSpeed);
-    //    }
-
-    //}
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.W) && (pointFinish - 1f > startPositionZ - laneOffset) && isMoving == false)
@@ -116,6 +101,7 @@ public class Player : MonoBehaviour
             StopCoroutine(movingCoroutine);
             animator.Play("jumping");
             isMoving = false;
+            rb.constraints |= RigidbodyConstraints.FreezePositionZ;
         }
         animator.CrossFade("jumping", 0f);
         movingCoroutine = StartCoroutine(MoveCoroutine(speed));
@@ -124,6 +110,7 @@ public class Player : MonoBehaviour
     IEnumerator MoveCoroutine(float vectorX)
     {
         isMoving = true;
+        rb.constraints &= ~RigidbodyConstraints.FreezePositionZ;
         yield return new WaitForSeconds(0.2f);
         while (Mathf.Abs(pointStart - transform.position.z) < laneOffset)
         {
@@ -141,7 +128,8 @@ public class Player : MonoBehaviour
             rb.velocity = new Vector3(rb.velocity.x, -10, rb.velocity.z);
         }
         isMoving = false;
+        rb.constraints |= RigidbodyConstraints.FreezePositionZ;
+
     }
 
 }
-

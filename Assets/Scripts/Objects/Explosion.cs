@@ -19,8 +19,9 @@ public class Explosion : MonoBehaviour
             }
         }
     }
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
+        Gizmos.color = new Color(1f, 0f, 0f, 0.1f);
         Gizmos.DrawSphere(transform.position, radius);
     }
 }

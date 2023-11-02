@@ -36,7 +36,7 @@ public class SoundController : MonoBehaviour
             return;
         Instance.source.PlayOneShot(clip);
     }
-    public static void PlatAudioClip(string clipName)
+    public static void PlayAudioClip(string clipName)
     {
         if (Instance == null || Instance.source == null || Instance.clips.Length == 0)
             return;

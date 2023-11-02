@@ -1100,7 +1100,7 @@ GameObject:
   - component: {fileID: 5487755288721411588}
   - component: {fileID: 4158061997928420049}
   - component: {fileID: 6581692632075131155}
-  - component: {fileID: 4521945212847863086}
+  - component: {fileID: 3599059828326921318}
   m_Layer: 7
   m_Name: Train (Stones)
   m_TagString: Untagged
@@ -1173,7 +1173,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 7.0528507, y: 1.04, z: 1.53}
   m_Center: {x: -3.024562, y: -0.05, z: -0.15999997}
---- !u!114 &4521945212847863086
+--- !u!114 &3599059828326921318
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1182,12 +1182,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 5281836971462363156}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8dd333f0204c34641b73a19c70bcc5db, type: 3}
+  m_Script: {fileID: 11500000, guid: f21555f76e7fa0641ba761ee5af96938, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  interactsWith: 0
-  defaultModel: {fileID: 4697522155548144878}
-  changedModel: {fileID: 3829662885083895445}
+  startModel: {fileID: 4697522155548144878}
+  endModel: {fileID: 3829662885083895445}
 --- !u!1 &5361507455579149740
 GameObject:
   m_ObjectHideFlags: 0

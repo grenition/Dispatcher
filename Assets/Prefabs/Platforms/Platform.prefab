@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4911932707983890217}
   - component: {fileID: 4072970589443422729}
+  - component: {fileID: 1109463173986480873}
   m_Layer: 0
   m_Name: Platform
   m_TagString: Untagged
@@ -47,9 +48,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 387874f1c6b9f2d448268e9245b74eb8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  platformName: platform_default
   begin: {fileID: 5708337560164378855}
   end: {fileID: 2330907087621768793}
+  platformType: 1
+--- !u!114 &1109463173986480873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 475230164261432679}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8c6e2d5d090f4994d8d7a8b18c0c7646, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  startInventory:
+  - objectType: 3
+    count: 1000
+  - objectType: 2
+    count: 1000
+  - objectType: 0
+    count: 1000
+  - objectType: 1
+    count: 1000
+  levelSpeed: 3
+  offset: 10
 --- !u!1 &489414610107541180
 GameObject:
   m_ObjectHideFlags: 0

@@ -17,6 +17,6 @@ public class UI_ButtonSound : MonoBehaviour
     }
     private void PlayAudio()
     {
-        SoundController.PlatAudioClip(clipName);
+        SoundController.PlayAudioClip(clipName);
     }
 }

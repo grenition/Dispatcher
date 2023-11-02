@@ -53,7 +53,7 @@ public class UI_Controller : MonoBehaviour
         SetPageObjectsActive(gameObjects, false);
         SetPageObjectsActive(dieObjects, true);
 
-        SoundController.PlatAudioClip("Dead");
+        SoundController.PlayAudioClip("Dead");
     }
     public void UpdateCompletedLevelsText()
     {

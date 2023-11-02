@@ -165,4 +165,10 @@ public class PlatformGenerator : MonoBehaviour
         instance.platforms.Clear();
     }
     //public functions
+    public static Platform GetLastPlatform()
+    {
+        if (instance == null)
+            return null;
+        return instance.platforms[instance.platforms.Count - 1];
+    }
 }

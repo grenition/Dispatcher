@@ -5,46 +5,18 @@ using UnityEngine;
 public class GridInteractions : MonoBehaviour
 {
     public static GridInteractions Instance { get; private set; }
-    public GridObject CurrentInteractableObject
-    {
-        get
-        {
-            return currentObject;
-        }
-        set
-        {
-            if(currentObject != null)
-            {
-                currentObject.SetMaterial(GridObjectSelection.defaultMaterial);
-                currentObject.IsInterating = false;
-                currentObject.SetInventoryObject(false);
-            }
-
-            if (value != null && !value.Interactable)
-                return;
-
-            currentObject = value;
-
-            if (currentObject != null)
-            {
-                savedObjectParent = currentObject.transform.parent;
-                savedObjectLocalPosition = currentObject.transform.localPosition;
-
-                currentObject.IsInterating = true;
-
-                float median = ((interactionBegin.position + interactionEnd.position) / 2f).x;
-
-                currentObject.transform.position = new Vector3(median, -99999f, 99999f);
-                targetPosition = new Vector3(median, -99999f, 99999f);
-
-                currentObject.ClearTiles();
-            }
-        }
-    }
     public Transform InteractionEnd { get => interactionEnd; }
     public Transform InteractionBegin { get => interactionBegin; }
 
     //parameters
+    [Header("Grid Parameters")]
+    [SerializeField] private Vector2 tileSize = new Vector2(3f, 3f);
+    [SerializeField] private Vector2 gridOffset = Vector2.zero;
+    [Tooltip("x field: minimal vertical coordinate, y field: maximum vertical coordinate")]
+    [SerializeField] private Vector2 minAndMaxVericalGridCoordinates = new Vector2(-1f, 1f);
+
+
+    [Header("Legacy")]
     [SerializeField] private LayerMask gridLayerMask;
     [SerializeField] private LayerMask gridObjectsLayerMask;
     [SerializeField] private float maxDistance = 100f;
@@ -53,16 +25,61 @@ public class GridInteractions : MonoBehaviour
     [SerializeField] private Transform interactionEnd;
 
     //local values
-    private GridObject currentObject;
-    private PlatformGridTile tileForCurrentObject;
-
+    public GridObject currentObjectCopy;
+    public GridObject currentObjectInstance;
     private Camera mainCamera;
     private GameObject lastObject;
     private Vector3 targetPosition;
-
     private Vector3 savedObjectLocalPosition;
     private Transform savedObjectParent;
+    private float currentDisplacement = 0f;
 
+
+    #region Grid Logic
+    private void OnDrawGizmos()
+    {
+        for(int y = -1; y < 2; y++)
+        {
+            for(int x = 0; x < 50; x++)
+            {
+                Gizmos.color = new Color(1f, 1f, 1f, 0.2f);
+                Vector3 _center = new Vector3(-x * tileSize.x + currentDisplacement, 4f, -y * tileSize.y);
+                Gizmos.DrawCube(_center, new Vector3(tileSize.x, 1f, tileSize.y));
+            }
+        }
+    }
+
+    private void UpdateDisplacement()
+    {
+        currentDisplacement += GameController.Instance.PlatformsSpeed * Time.deltaTime;
+        if (currentDisplacement >= 0)
+            currentDisplacement -= tileSize.x;
+    }
+    private Vector2 GetNearestTile(Vector3 position)
+    {
+        Vector2 tileCoordinates = new Vector2((position.x - currentDisplacement) / tileSize.x, position.z / tileSize.y);
+        tileCoordinates.y = Mathf.Clamp(tileCoordinates.y, minAndMaxVericalGridCoordinates.x, minAndMaxVericalGridCoordinates.y);
+        tileCoordinates.x = Mathf.Round(tileCoordinates.x);
+        tileCoordinates.y = Mathf.Round(tileCoordinates.y);
+        return tileCoordinates;
+    }
+    public Vector3 GetNearestTilePosition(Vector3 position, bool displacementByMoving = true)
+    {
+        Vector2 tileCoordinates = GetNearestTile(position);
+
+        float displacement = 0f;
+        if (displacementByMoving)
+            displacement = currentDisplacement;
+
+        return new Vector3
+        {
+            x = tileCoordinates.x * tileSize.x + gridOffset.x + displacement,
+            y = position.y,
+            z = tileCoordinates.y * tileSize.y + gridOffset.y
+        };
+    }
+    #endregion
+    #region Unity Events
     private void Awake()
     {
         if (Instance == null)
@@ -71,15 +88,64 @@ public class GridInteractions : MonoBehaviour
     }
     void Update()
     {
+        //эта функция обновляет коэфицент смещения, чтобы следовать движению платформ
+        UpdateDisplacement();
+
+        //при нажатии на кнопку пытаемся определить объект, который находится под курсором
         if (Input.GetKeyDown(KeyCode.Mouse0))
             DetectObject();
-
+        
+        //при отжатии кнопки пытаемся поставить объект или удаляем его
         if (!Input.GetKey(KeyCode.Mouse0) && CurrentInteractableObject != null)
         {
             PlaceCurrentObject();
         }
-        SelectTileForCurrentObject();
+
+        //находим ближайший тайл сетки для текущего объекта
+        UpdateTargetTile();
+        //двигаем текущий объект к тайлу
         MoveCurrentObject();
+        //меняем цвет
+        SetCurrentObjectMaterial();
+    }
+    #endregion
+    #region GridObject main
+    public GridObject CurrentInteractableObject
+    {
+        get
+        {
+            return currentObjectCopy;
+        }
+        set
+        {
+            if (currentObjectCopy != null)
+            {
+                Destroy(currentObjectCopy.gameObject);
+                currentObjectInstance = null;
+            }
+
+            if (value != null && !value.Interactable)
+                return;
+
+            currentObjectCopy = value;
+            if (currentObjectCopy != null)
+            {
+                currentObjectCopy.IsInterating = true;
+
+                //смещаем объект куда-то далеко, чтобы при спавне не появлялся на экране
+                float median = ((interactionBegin.position + interactionEnd.position) / 2f).x;
+                currentObjectCopy.transform.position = new Vector3(median, -99999f, 99999f);
+                targetPosition = new Vector3(median, -99999f, 99999f);
+            }
+        }
+    }
+    private GridObject CreateCopyOfGridObject(GridObject objectInstance)
+    {
+        //создаем копию исходного объекта на сетке
+        GridObject objectCopy = Instantiate(objectInstance, objectInstance.transform.position, objectInstance.transform.rotation);
+        objectCopy.transform.parent = objectInstance.transform;
+        objectCopy.transform.localScale = Vector3.one;
+        return objectCopy;
     }
     private void DetectObject()
     {
@@ -93,130 +159,64 @@ public class GridInteractions : MonoBehaviour
             {
                 if(obj.Interactable)
                 {
-                    CurrentInteractableObject = obj;
+                    currentObjectInstance = obj;
+                    CurrentInteractableObject = CreateCopyOfGridObject(obj);
                 }
             }
         }
     }
     private void PlaceCurrentObject()
     {
-        if (currentObject == null)
+        if (currentObjectCopy == null)
             return;
 
-        if(currentObject.TypeOfGridObject == GridObjectType.action)
+        if(currentObjectCopy.TypeOfGridObject == GridObjectType.action)
         {
-            bool returnToInventory = true;
-            Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, gridObjectsLayerMask))
+            //проверяем наличие объектов внутри текущего, если находим, то применяем свойство
+            List<GridObject> _objects = currentObjectCopy.GetNearGridObjects(currentObjectCopy.transform.position);
+            if (_objects.Count > 0)
             {
-                if (hit.collider.TryGetComponent(out GridObject obj))
-                {
-                    SoundController.PlatAudioClip("ObjectInteraction");
-                    obj.InteractWithObject(currentObject.ObjType);
-                    returnToInventory = false;
-                }
+                _objects[0].InteractWithObject(currentObjectCopy.ObjType);
+                SoundController.PlayAudioClip("ObjectInteraction");
             }
-            StopObject(true, true, returnToInventory);
-        }
-
-        if(tileForCurrentObject == null)
-        {
-            StopObject(true, true);
-            return;
-        }
-
-        Vector3 position = tileForCurrentObject.Tr.position;
-        if (currentObject.OnlyVerticalMovement)
-            position = currentObject.Tr.position;
-
-        if (currentObject.PlaceOnTiles(position))
-        {
-            SoundController.PlatAudioClip("PlacingObject");
-            StopObject(false, false);
         }
         else
         {
-            StopObject(true, true);
-        }
-    }
-    private void StopObject(bool destroy = false, bool applySavedTransforms = false, bool returnToInventory = true)
-    {
-        if (currentObject == null)
-            return;
-
-        if (applySavedTransforms)
-        {
-            currentObject.transform.localPosition = savedObjectLocalPosition;
-            currentObject.transform.parent = savedObjectParent;
-        }
-
-        if(destroy || currentObject.TypeOfGridObject == GridObjectType.action)
-            currentObject.DestroyMe(returnToInventory);
-        CurrentInteractableObject = null;
-    }
-    private void SelectTileForCurrentObject()
-    {
-        if(CurrentInteractableObject == null)
-        {
-            tileForCurrentObject = null;
-            return;
-        }
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, gridLayerMask))
-        {
-            if (CurrentInteractableObject.TypeOfGridObject == GridObjectType.action)
+            //ставим объекты при условии, что есть свободное пространство
+            if (currentObjectCopy.CheckEmptySpace())
             {
-                targetPosition = hit.point;
-                if(hit.collider.gameObject != lastObject)
+                if (currentObjectInstance != null)
                 {
-                    GridObjectSelection selection = GridObjectSelection.redMaterial;
-
-                    if(hit.collider.TryGetComponent(out PlatformGridTile tile))
-                    {
-                        if(tile.CurrentObject != null && tile.CurrentObject.ObjType == ObjectType.train 
-                            && tile.CurrentObject.IsIntertactWith(CurrentInteractableObject.ObjType))
-                        {
-                            selection = GridObjectSelection.greenMaterial;
-                        }
-                    }
-
-                    currentObject.SetMaterial(selection);
-                }
-            }
-            else
-            {
-
-                if (hit.collider.gameObject == lastObject)
-                {
-                    if (tileForCurrentObject == null)
-                    {
-                        targetPosition = hit.point;
-                        CurrentInteractableObject.SetMaterial(GridObjectSelection.redMaterial);
-                    }
-                    else
-                    {
-                        targetPosition = tileForCurrentObject.Tr.position;
-                    }
-                    return;
-                }
-
-                if (hit.collider.TryGetComponent(out PlatformGridTile tile))
-                {
-                    if (CurrentInteractableObject.CheckEmptySpace(tile.Tr.position))
-                    {
-                        CurrentInteractableObject.SetMaterial(GridObjectSelection.greenMaterial);
-                        targetPosition = tile.Tr.position;
-                        tileForCurrentObject = tile;
-                    }
-                    else
-                        tileForCurrentObject = null;
+                    //установка сохраненного объекта в новое место
+                    currentObjectInstance.PlaceOnTiles(currentObjectCopy.transform.position);
                 }
                 else
                 {
-                    tileForCurrentObject = null;
+                    //поиск последней активной платформы на сцене, чтобы сделать новый объект ее дочерним
+                    Platform plat = PlatformGenerator.GetLastPlatform();
+                    if (plat == null)
+                        return;
+
+                    //спавн копии текущего интерактивного объекта и применение ему свойств статического
+                    currentObjectCopy.IsInterating = false;
+                    GridObject newObject = CreateCopyOfGridObject(currentObjectCopy);
+                    newObject.transform.parent = plat.transform;
                 }
             }
-            lastObject = hit.collider.gameObject;
+        }
+        CurrentInteractableObject = null;
+    }
+    #endregion
+    #region Updating functions
+    private void UpdateTargetTile()
+    {
+        //относительно текущего ввода находим ближайшую клетку для перемещения
+        if(CurrentInteractableObject == null)
+            return;
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, gridLayerMask))
+        {
+            targetPosition = GetNearestTilePosition(hit.point, true);
         }
     }
     private void MoveCurrentObject()
@@ -224,21 +224,46 @@ public class GridInteractions : MonoBehaviour
         if (CurrentInteractableObject == null)
             return;
 
-        if (Vector3.Distance(CurrentInteractableObject.Tr.position, targetPosition) > maxDistance)
-            CurrentInteractableObject.Tr.position = targetPosition;
+        //телепортация объекта к цели при большом расстоянии
+        if (Vector3.Distance(CurrentInteractableObject.transform.position, targetPosition) > maxDistance)
+            CurrentInteractableObject.transform.position = targetPosition;
 
-        CurrentInteractableObject.Tr.position = Vector3.Lerp(CurrentInteractableObject.Tr.position,
+        //плавно двигаем объект к цели
+        CurrentInteractableObject.transform.position = Vector3.Lerp(CurrentInteractableObject.transform.position,
             targetPosition, smoothGridTranslationMultiplier * Time.deltaTime);
 
+        //вертикальное движение (если включено)
         if (CurrentInteractableObject.OnlyVerticalMovement)
         {
-            Vector3 localPosition = CurrentInteractableObject.Tr.localPosition;
+            Vector3 localPosition = CurrentInteractableObject.transform.localPosition;
             localPosition.x = savedObjectLocalPosition.x;
-            CurrentInteractableObject.Tr.localPosition = localPosition;
+            CurrentInteractableObject.transform.localPosition = localPosition;
         }
 
-        float posX = CurrentInteractableObject.Tr.position.x;
+        //проверка на выходы за пределы окрестности для размещения
+        float posX = CurrentInteractableObject.transform.position.x;
         if (posX > interactionEnd.position.x || posX < interactionBegin.position.x)
-            StopObject(true, true);
+            CurrentInteractableObject = null;
     }
+    private void SetCurrentObjectMaterial()
+    {
+        if (CurrentInteractableObject == null)
+            return;
+        
+        //изменяем цвет объекта, проверяя на пустоту внутри него
+        GridObjectSelection _material = GridObjectSelection.redMaterial;
+        if (CurrentInteractableObject.TypeOfGridObject == GridObjectType.action)
+        {
+            List<GridObject> gridObjects = CurrentInteractableObject.GetNearGridObjects(CurrentInteractableObject.transform.position);
+            if (gridObjects.Count > 0 && gridObjects[0].IsInteractWithObject(CurrentInteractableObject.ObjType))
+                _material = GridObjectSelection.greenMaterial;
+        }
+        else
+        {
+            if(CurrentInteractableObject.CheckEmptySpace())
+                _material = GridObjectSelection.greenMaterial;
+        }       
+        CurrentInteractableObject.SetMaterial(_material);
+    }
+    #endregion
 }

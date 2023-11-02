@@ -13,7 +13,7 @@ public class Spring : MonoBehaviour
             if(anim != null)
             {
                 anim.SetTrigger("Work");
-                SoundController.PlatAudioClip("Spring");
+                SoundController.PlayAudioClip("Spring");
             }
         }
     }
