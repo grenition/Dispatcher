@@ -43,7 +43,7 @@ GameObject:
   - component: {fileID: 8749664557905283945}
   - component: {fileID: 9149419023443409242}
   - component: {fileID: 3258537040780622281}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Train_Model
   m_TagString: Train
   m_Icon: {fileID: 0}
@@ -329,6 +329,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: mcd-head
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 7e1db12bfc13440429d8e57c162d4b9c,
+        type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -417,6 +422,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: mcd
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: db98a7e5044e03940ac4984b5896bfc6,
+        type: 3}
+      propertyPath: m_Layer
+      value: 7
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
