@@ -51,13 +51,18 @@ public class Platform : MonoBehaviour
     }
     public void DisablePlatform(bool destroy = true)
     {
-        if (!IsPooling && destroy)
-            Destroy(gameObject);
         foreach(var obj in GetComponentsInChildren<GridObject>())
         {
-            if(!obj.DontDestroyOnPlatformSpawn)
-                Destroy(obj.gameObject);
+            if (!obj.DontDestroyOnPlatformSpawn)
+                obj.DestroyObject();
         }
+
+        if (!IsPooling && destroy)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         gameObject.SetActive(false);
         tr.parent = PlatformsPool.PlatformsParent;
     }

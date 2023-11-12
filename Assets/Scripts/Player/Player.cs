@@ -8,16 +8,16 @@ public class Player : MonoBehaviour
 
     private Animator animator;
 
-    public float jumpGravity = -40;
-    public float jumpPower = 15;
-    public float realGravity = -9.8f;
+    [SerializeField] private float jumpGravity = -40;
+    [SerializeField] private float jumpPower = 15;
+    [SerializeField] private float realGravity = -9.8f;
 
     private float laneOffset = 2.7f;
-    public float laneChangeSpeed = 7f;
+    [SerializeField] private float laneChangeSpeed = 7f;
 
-    public float pointStart;
-    public float pointFinish;
-    public float startPositionZ;
+    [SerializeField] private float pointStart;
+    [SerializeField] private float pointFinish;
+    [SerializeField] private float startPositionZ;
     private bool isMoving = false;
     private Coroutine movingCoroutine;
 
@@ -29,11 +29,11 @@ public class Player : MonoBehaviour
     {
         if (Instance == null)
             Instance = this;
+        animator = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody>();
     }
     void Start()
     {
-        animator = GetComponent<Animator>();
-        rb = GetComponent<Rigidbody>();
         pointFinish = transform.position.z;
         startPositionZ = transform.position.z;
         StartGame();

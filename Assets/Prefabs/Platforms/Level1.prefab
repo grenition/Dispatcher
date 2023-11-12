@@ -40,7 +40,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 9191494641007237410}
-  - component: {fileID: -3370688309569447974}
   - component: {fileID: 7553269379430767864}
   m_Layer: 0
   m_Name: Level1
@@ -80,21 +79,6 @@ Transform:
   - {fileID: 4611987391560100185}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &-3370688309569447974
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3155636970876817629}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 387874f1c6b9f2d448268e9245b74eb8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  begin: {fileID: 3330159869153955265}
-  end: {fileID: 2181770332512601069}
-  platformType: 1
 --- !u!114 &7553269379430767864
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -107,15 +91,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8c6e2d5d090f4994d8d7a8b18c0c7646, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  begin: {fileID: 3330159869153955265}
+  end: {fileID: 2181770332512601069}
+  platformType: 1
   startInventory:
   - objectType: 0
     count: 0
   - objectType: 1
     count: 0
   - objectType: 2
-    count: 0
+    count: 3
   - objectType: 3
     count: 0
+  - objectType: 5
+    count: 100
   levelSpeed: 2.5
   offset: 10
 --- !u!1 &5907930256210530843

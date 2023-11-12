@@ -413,12 +413,8 @@ MonoBehaviour:
   gridCorrection: 1
   dontDestroyOnPlatformSpawn: 0
   onlyVerticalMovement: 0
-  destroyAfterBadTranslation: 1
-  isInventoryObject: 1
   objectType: 2
   objectSize: {x: 3.58, y: 1.16, z: 1.91}
   objectCenter: {x: 0, y: 0, z: 0}
-  greenSelectionMaterial: {fileID: 2100000, guid: a89c1830044e1214480f3078de6d5a82,
-    type: 2}
-  redSelectionMaterial: {fileID: 2100000, guid: 7f6353bed8d9ccd45b1127de6def5d3c,
-    type: 2}
+  materialsPreset: {fileID: 11400000, guid: 5dfe93c9b7dc90c44b645dd5462c112f, type: 2}
+  selectionScaleMultiplier: 0.9

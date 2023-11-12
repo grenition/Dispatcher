@@ -62,7 +62,6 @@ public class GameController : MonoBehaviour
         level++;
 
         PlatformGenerationType levelType = GetLevel(level);
-        print(levelType);
 
         if (levelType == PlatformGenerationType.tonnels)
             return;
@@ -99,6 +98,7 @@ public class GameController : MonoBehaviour
         targetPlatformSpeed = 0f;
         levelStarted = false;
         OnDie?.Invoke();
+        PlayerController.Die();
     }
     public void ResetLevelsProgress()
     {
@@ -107,7 +107,6 @@ public class GameController : MonoBehaviour
     }
     public void Restart()
     {
-        print("restart");
         SceneLoader.ReloadCurrentScene();
     }
 

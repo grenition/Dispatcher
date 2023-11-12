@@ -3,6 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public delegate void ObjectTypeEventHandler(ObjectType objType);
+public enum ObjectType
+{
+    hammer,
+    key,
+    ramp,
+    spring,
+    train,
+    coin
+}
 
 public enum GridObjectSelection
 {
@@ -25,6 +34,13 @@ public class MeshRenderComponents
     public Renderer renderer;
     public Material startMaterial;
 }
+public struct GridObjectBuffer
+{
+    public bool interactable;
+    public Vector3 position;
+    public Vector3 localScale;
+    public Transform parent;
+}
 public class GridObject : MonoBehaviour
 {
     #region public values
@@ -45,6 +61,7 @@ public class GridObject : MonoBehaviour
     public bool DontDestroyOnPlatformSpawn { get => dontDestroyOnPlatformSpawn; }
     public bool Interactable { get => interactable; }
     public GridObjectType TypeOfGridObject { get => gridObjectType; }
+    public bool IsPooled { get; set; }
 
     #endregion
 
@@ -55,13 +72,11 @@ public class GridObject : MonoBehaviour
     [SerializeField] private GridCorrection gridCorrection = GridCorrection.left;
     [SerializeField] private bool dontDestroyOnPlatformSpawn = false;
     [SerializeField] private bool onlyVerticalMovement = false;
-    [SerializeField] private bool destroyAfterBadTranslation = true;
-    [SerializeField] private bool isInventoryObject = false;
     [SerializeField] private ObjectType objectType = ObjectType.ramp;
     [SerializeField] private Vector3 objectSize;
     [SerializeField] private Vector3 objectCenter;
-    [SerializeField] private Material greenSelectionMaterial;
-    [SerializeField] private Material redSelectionMaterial;
+    [SerializeField] private SelectionMaterialsPreset materialsPreset;
+    [SerializeField][Range(0.5f, 1.5f)] private float selectionScaleMultiplier = 0.9f;
     #endregion
 
     #region local values
@@ -70,19 +85,23 @@ public class GridObject : MonoBehaviour
     private List<Collider> colliders = new List<Collider>();
     private List<GridObjectInteraction> interactions = new List<GridObjectInteraction>();
     private bool isInteracting = false;
+    private GridObjectBuffer savedParameters;
     #endregion
 
-    private void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
         Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
         Gizmos.DrawCube(transform.position, new Vector3(3f, 2f, 2f));
+        Gizmos.color = new Color(0f, 1f, 0f, 0.1f);
+        Gizmos.DrawCube(objectCenter + transform.position, objectSize);
     }
 
     private void Awake()
     {
         tr = transform;
+        SaveParameters();
 
-        foreach(var mesh in GetComponentsInChildren<Renderer>(true))
+        foreach (var mesh in GetComponentsInChildren<Renderer>(true))
         {
             MeshRenderComponents comp = new MeshRenderComponents
             {
@@ -111,17 +130,24 @@ public class GridObject : MonoBehaviour
         //if (!IsInterating && GridInteractions.Instance != null)
         //    PlaceOnTiles(transform.position);
     }
+    private void OnDisable()
+    {
+        isInteracting = false;
+    }
     private void Update()
     {
         if (Input.GetKeyDown(KeyCode.R))
             PlaceOnTiles(tr.position);
     }
-
-    //устанавливает объект в центр ближайшейшего тайла сетки
-    public void PlaceOnTiles(Vector3 newPosition)
+    #region local functions
+    private void SaveParameters()
     {
-        tr.position = GridInteractions.Instance.GetNearestTilePosition(newPosition);
+        savedParameters.interactable = interactable;
+        savedParameters.position = transform.position;
+        savedParameters.parent = transform.parent;
+        savedParameters.localScale = transform.localScale;
     }
+    #endregion
 
     #region cheking objects in local region
     //возвращает, находящиеся в объекте объекты типа GridObject
@@ -145,6 +171,12 @@ public class GridObject : MonoBehaviour
         return GetNearGridObjects(tr.position).Count == 0;
     }
     #endregion
+    #region global interactions
+    //устанавливает объект в центр ближайшейшего тайла сетки
+    public void PlaceOnTiles(Vector3 newPosition)
+    {
+        tr.position = GridInteractions.Instance.GetNearestTilePosition(newPosition);
+    }
     public void SetMaterial(GridObjectSelection selection)
     {
         Material mat = null;
@@ -154,10 +186,10 @@ public class GridObject : MonoBehaviour
                 mat = null;
                 break;
             case GridObjectSelection.greenMaterial:
-                mat = greenSelectionMaterial;
+                mat = materialsPreset.greenMaterial;
                 break;
             case GridObjectSelection.redMaterial:
-                mat = redSelectionMaterial;
+                mat = materialsPreset.redMaterial;
                 break;
         }
         foreach(var mesh in meshRendererers)
@@ -167,17 +199,6 @@ public class GridObject : MonoBehaviour
             else
                 mesh.renderer.material = mat;
         }
-    }
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = new Color(0f, 1f, 0f, 0.1f);
-        Gizmos.DrawCube(objectCenter + transform.position, objectSize);
-    }
-    public void SetInventoryObject(bool active = true)
-    {
-        isInventoryObject = active;
-        dontDestroyOnPlatformSpawn = !active;
-        destroyAfterBadTranslation = active;
     }
     public void InteractWithObject(ObjectType _interactor)
     {
@@ -195,4 +216,28 @@ public class GridObject : MonoBehaviour
         }
         return false;
     }
+    public void LockReplacing(bool lockState = true)
+    {
+        interactable = !lockState;
+    }
+    public void DestroyObject()
+    {
+        if (IsPooled)
+        {
+            ObjectsPool.StopGridObject(this);
+        }
+        else
+            Destroy(gameObject);
+    }
+    public void ResetObject()
+    {
+        gameObject.SetActive(false);
+        IsInterating = false;
+        interactable = savedParameters.interactable;
+        transform.parent = savedParameters.parent;
+        transform.position = savedParameters.position;
+        transform.localScale = savedParameters.localScale;
+        gameObject.SetActive(true);
+    }
+    #endregion
 }

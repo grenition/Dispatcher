@@ -2,11 +2,16 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+public delegate void GridObjectEventHandler(GridObject gridObject);
 public class GridInteractions : MonoBehaviour
 {
     public static GridInteractions Instance { get; private set; }
     public Transform InteractionEnd { get => interactionEnd; }
     public Transform InteractionBegin { get => interactionBegin; }
+
+    //events
+    public static event GridObjectEventHandler OnGridObjectPlaced;
+    public static event GridObjectEventHandler OnNewGridObjectPlaced;
 
     //parameters
     [Header("Grid Parameters")]
@@ -25,8 +30,8 @@ public class GridInteractions : MonoBehaviour
     [SerializeField] private Transform interactionEnd;
 
     //local values
-    public GridObject currentObjectCopy;
-    public GridObject currentObjectInstance;
+    private GridObject currentObjectCopy;
+    private GridObject currentObjectInstance;
     private Camera mainCamera;
     private GameObject lastObject;
     private Vector3 targetPosition;
@@ -86,6 +91,16 @@ public class GridInteractions : MonoBehaviour
             Instance = this;
         mainCamera = Camera.main;
     }
+    private void OnEnable()
+    {
+        //подписываемся на забирание предмета из инвентаря, при его использовании
+        OnGridObjectPlaced += TakeItemFromInventory;
+    }
+    private void OnDisable()
+    {
+        //отписываемся, чтобы избежать лишних проблем
+        OnGridObjectPlaced -= TakeItemFromInventory;
+    }
     void Update()
     {
         //эта функция обновляет коэфицент смещения, чтобы следовать движению платформ
@@ -120,7 +135,7 @@ public class GridInteractions : MonoBehaviour
         {
             if (currentObjectCopy != null)
             {
-                Destroy(currentObjectCopy.gameObject);
+                currentObjectCopy.DestroyObject();
                 currentObjectInstance = null;
             }
 
@@ -139,10 +154,19 @@ public class GridInteractions : MonoBehaviour
             }
         }
     }
-    private GridObject CreateCopyOfGridObject(GridObject objectInstance)
+    private GridObject CreateCopyOfGridObject(GridObject objectInstance, bool poolCopy = false)
     {
         //создаем копию исходного объекта на сетке
-        GridObject objectCopy = Instantiate(objectInstance, objectInstance.transform.position, objectInstance.transform.rotation);
+        GridObject objectCopy;
+        if (!poolCopy)
+            objectCopy = Instantiate(objectInstance, objectInstance.transform.position, objectInstance.transform.rotation);
+        else
+        {
+            //использование объекта с пула
+            objectCopy = ObjectsPool.GetGridObject(objectInstance.ObjType);
+            objectCopy.transform.position = objectInstance.transform.position;
+            objectCopy.transform.rotation = objectInstance.transform.rotation;
+        }
         objectCopy.transform.parent = objectInstance.transform;
         objectCopy.transform.localScale = Vector3.one;
         return objectCopy;
@@ -174,10 +198,12 @@ public class GridInteractions : MonoBehaviour
         {
             //проверяем наличие объектов внутри текущего, если находим, то применяем свойство
             List<GridObject> _objects = currentObjectCopy.GetNearGridObjects(currentObjectCopy.transform.position);
-            if (_objects.Count > 0)
+            if (_objects.Count > 0 && _objects[0].IsInteractWithObject(currentObjectCopy.ObjType))
             {
                 _objects[0].InteractWithObject(currentObjectCopy.ObjType);
                 SoundController.PlayAudioClip("ObjectInteraction");
+                //вызываем событие
+                OnGridObjectPlaced?.Invoke(currentObjectCopy);
             }
         }
         else
@@ -199,9 +225,15 @@ public class GridInteractions : MonoBehaviour
 
                     //спавн копии текущего интерактивного объекта и применение ему свойств статического
                     currentObjectCopy.IsInterating = false;
-                    GridObject newObject = CreateCopyOfGridObject(currentObjectCopy);
+                    GridObject newObject = CreateCopyOfGridObject(currentObjectCopy, true);
+                    newObject.LockReplacing();
                     newObject.transform.parent = plat.transform;
+                    //вызываем событие
+                    OnNewGridObjectPlaced?.Invoke(newObject);
+
                 }
+                //вызываем событие
+                OnGridObjectPlaced?.Invoke(currentObjectCopy);
             }
         }
         CurrentInteractableObject = null;
@@ -218,6 +250,16 @@ public class GridInteractions : MonoBehaviour
         {
             targetPosition = GetNearestTilePosition(hit.point, true);
         }
+    }
+    public Vector3 GetNearestToMousePosition()
+    {
+        Vector3 outPosition = Vector3.zero;
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, gridLayerMask))
+        {
+            outPosition = GetNearestTilePosition(hit.point, true);
+        }
+        return outPosition;
     }
     private void MoveCurrentObject()
     {
@@ -264,6 +306,16 @@ public class GridInteractions : MonoBehaviour
                 _material = GridObjectSelection.greenMaterial;
         }       
         CurrentInteractableObject.SetMaterial(_material);
+    }
+    #endregion
+    #region Interaction with other scripts
+    //забираем из инвентаря предмет, если только что его использовали
+    private void TakeItemFromInventory(GridObject gridObject)
+    {
+        if (gridObject == null)
+            return;
+        print(gridObject.ObjType);
+        Inventory.RemoveObjectFromInventory(gridObject.ObjType);
     }
     #endregion
 }

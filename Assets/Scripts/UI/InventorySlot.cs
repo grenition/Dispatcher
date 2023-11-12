@@ -7,19 +7,9 @@ using UnityEngine.EventSystems;
 
 public delegate void VoidEventHandler();
 
-public enum ObjectType
-{
-    hammer,
-    key,
-    ramp,
-    spring,
-    train
-}
-
 [System.Serializable]
 public class InventoryUnit
 {
-    public GridObject gridObjectPrefab;
     public ObjectType objectType;
 
     public int CurrentCount
@@ -54,9 +44,7 @@ public class InventorySlot : MonoBehaviour, IPointerDownHandler
     {
         if (unit.CurrentCount <= 0)
             return;
-
-        unit.CurrentCount -= 1;
-        Inventory.StartPlacingGridObject(unit.gridObjectPrefab);
+        Inventory.StartPlacingGridObject(unit.objectType);
     }
     private void UpdateCount()
     {

@@ -7,9 +7,9 @@ public class Spring : MonoBehaviour
     [SerializeField] private Animator anim;
     private void OnTriggerEnter(Collider other)
     {
-        if(other.TryGetComponent(out Player player))
+        if(other.TryGetComponent(out CharacterMovement player))
         {
-            player.Jump();
+            player.HighJump();
             if(anim != null)
             {
                 anim.SetTrigger("Work");

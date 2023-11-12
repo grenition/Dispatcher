@@ -8,11 +8,9 @@ public class DieDetector : MonoBehaviour
     {
         if (other.tag == "Train")
         {
-            print("die");
             if (GameController.Instance.levelStarted)
             {
                 GameController.Instance.Die();
-                Player.Instance.EndGame();
             }
         }
     }
