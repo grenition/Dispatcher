@@ -17,7 +17,7 @@ public static class Extensions
         list[index1] = list[index2];
         list[index2] = temp;
     }
-    public static void CycleMoveUp<T>(this List<T> list)
+    public static void CycleMoveLeft<T>(this List<T> list)
     {
         if (list.Count <= 1)
             return;
@@ -26,7 +26,7 @@ public static class Extensions
             list[i - 1] = list[i];
         list[list.Count - 1] = temp;
     }
-    public static void CycleMoveDown<T>(this List<T> list)
+    public static void CycleMoveRight<T>(this List<T> list)
     {
         if (list.Count <= 1)
             return;

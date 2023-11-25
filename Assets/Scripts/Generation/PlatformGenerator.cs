@@ -5,10 +5,7 @@ using UnityEngine;
 public enum PlatformGenerationType
 {
     tonnels,
-    level1,
-    level2,
-    level3,
-    testPlatform
+    level
 }
 public class PlatformGenerator : MonoBehaviour
 {
@@ -30,7 +27,7 @@ public class PlatformGenerator : MonoBehaviour
             instance.generationType = value;
         }
     }
-
+    public static int CurrentLevelId { get; set; }
     public Transform EndArea { get => endArea; }
     public Transform BeginArea { get => beginArea; }
 
@@ -152,7 +149,15 @@ public class PlatformGenerator : MonoBehaviour
     }
     private Platform GetNextPlatform()
     {
-        return PlatformsPool.GetPlatform(generationType);
+        if (generationType != PlatformGenerationType.level)
+            return PlatformsPool.GetPlatform(generationType);
+        else
+        {
+            Platform plat = PlatformsPool.GetLevelPlatform(CurrentLevelId);
+            if (plat == null)
+                plat = PlatformsPool.GetPlatform(PlatformGenerationType.tonnels);
+            return plat;
+        }
     }
     public static void ClearAll()
     {

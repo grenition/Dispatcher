@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+
 
 public delegate void ObjectTypeEventHandler(ObjectType objType);
 public enum ObjectType
@@ -58,10 +60,20 @@ public class GridObject : MonoBehaviour
     }
     public ObjectType ObjType { get => objectType; }
     public bool OnlyVerticalMovement { get => onlyVerticalMovement; }
+    public bool CanBePlacedOnOtherObjects { get => canBePlacedOnOtherObjects; }
     public bool DontDestroyOnPlatformSpawn { get => dontDestroyOnPlatformSpawn; }
     public bool Interactable { get => interactable; }
     public GridObjectType TypeOfGridObject { get => gridObjectType; }
-    public bool IsPooled { get; set; }
+    public bool IsPooled { get => isPooled; set { isPooled = value; } }
+    public float VericalOffset { get => verticalOffset; }
+    public bool CanPlaceObjectsOnRoof { get => canPlaceOtherObjectsOnRoof; }
+    public bool OneInRow { get => oneInRow; }
+    public List<GridObjectInteraction> Interactions { get => interactions; }
+    public float DestroyBlockTime { get; private set; }
+    public int CurrentFloor { get => currentFloor; }
+    public bool PlaceOnAwake { get => placeOnAwake; set { placeOnAwake = value; } }
+
+    public Action<Vector3> OnOtherObjectInRowDeleted;
 
     #endregion
 
@@ -69,14 +81,18 @@ public class GridObject : MonoBehaviour
     [SerializeField] private GridObjectType gridObjectType = GridObjectType.physicalObject;
     [SerializeField] private bool interactable = true;
     [SerializeField] private bool correctByGridOnAwake = true;
-    [SerializeField] private GridCorrection gridCorrection = GridCorrection.left;
     [SerializeField] private bool dontDestroyOnPlatformSpawn = false;
     [SerializeField] private bool onlyVerticalMovement = false;
+    [SerializeField] private bool canBePlacedOnOtherObjects = false;
+    [SerializeField] private bool canPlaceOtherObjectsOnRoof = true;
+    [SerializeField] private bool oneInRow = false;
+    [SerializeField] private bool destroyOtherObjectsInRow = false;
+    [SerializeField] private float destroyByOtherObjectInRowThreshold = 0.5f;
     [SerializeField] private ObjectType objectType = ObjectType.ramp;
     [SerializeField] private Vector3 objectSize;
     [SerializeField] private Vector3 objectCenter;
     [SerializeField] private SelectionMaterialsPreset materialsPreset;
-    [SerializeField][Range(0.5f, 1.5f)] private float selectionScaleMultiplier = 0.9f;
+    [SerializeField] private float verticalOffset = 0f;
     #endregion
 
     #region local values
@@ -86,16 +102,45 @@ public class GridObject : MonoBehaviour
     private List<GridObjectInteraction> interactions = new List<GridObjectInteraction>();
     private bool isInteracting = false;
     private GridObjectBuffer savedParameters;
+    private bool isPooled = false;
+    [SerializeField] private int currentFloor;
+    private bool placeOnAwake = true;
     #endregion
 
+#if UNITY_EDITOR
+    public bool visualizeGrid = true;
+    private void OnDrawGizmos()
+    {
+        if (Application.isPlaying || !transform.hasChanged)
+            return;
+        transform.position = GridInteractions.ConvertToGridPosition(transform.position);
+        transform.hasChanged = false;
+
+    }
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
         Gizmos.DrawCube(transform.position, new Vector3(3f, 2f, 2f));
         Gizmos.color = new Color(0f, 1f, 0f, 0.1f);
         Gizmos.DrawCube(objectCenter + transform.position, objectSize);
-    }
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawSphere(transform.position - Vector3.up * verticalOffset, 0.1f);
 
+        if (visualizeGrid)
+        {
+            Vector3 pos = transform.position;
+            for (int y = -1; y < 2; y++)
+            {
+                for (int x = -10; x < 10; x++)
+                {
+                    Gizmos.color = new Color(1f, 1f, 1f, 0.2f);
+                    Vector3 _center = new Vector3(-x * 3, -2f, -y * 3) + pos;
+                    Gizmos.DrawCube(_center, new Vector3(3, 1f, 3));
+                }
+            }
+        }
+    }
+#endif
     private void Awake()
     {
         tr = transform;
@@ -121,7 +166,9 @@ public class GridObject : MonoBehaviour
     }
     private void Start()
     {
-        PlaceOnTiles(tr.position);
+        if(placeOnAwake)
+            PlaceOnTiles(tr.position, !canBePlacedOnOtherObjects);
+        DestroyBlockTime = Time.time + destroyByOtherObjectInRowThreshold;
     }
     private void OnEnable()
     {
@@ -154,28 +201,125 @@ public class GridObject : MonoBehaviour
     public List<GridObject> GetNearGridObjects(Vector3 position)
     {
         List<GridObject> list = new List<GridObject>();
-        foreach (var col in Physics.OverlapBox(position + objectCenter, objectSize / 2))
+        foreach (var col in Physics.OverlapBox(position + objectCenter, objectSize / 2f))
         {
-            if(col.TryGetComponent(out GridObject obj))
+            if (col.TryGetComponent(out GridObject obj))
+            {
+                if (obj.ObjType == ObjectType.coin && ObjType != ObjectType.coin)
+                    continue;
                 list.Add(obj);
+            }
         }
         return list;
-
+    }
+    public List<GridObject> GetNearGridObjects(Vector3 position, out bool isContainsPlayer)
+    {
+        isContainsPlayer = false;
+        List<GridObject> list = new List<GridObject>();
+        foreach (var col in Physics.OverlapBox(position + objectCenter, objectSize / 2f))
+        {
+            if (col.gameObject == gameObject)
+                continue;
+            if (col.GetComponent<PlayerController>())
+                isContainsPlayer = true;
+            if (col.TryGetComponent(out GridObject obj))
+            {
+                if (obj.ObjType == ObjectType.coin && ObjType != ObjectType.coin)
+                    continue;
+                list.Add(obj);
+            }
+        }
+        return list;
     }
     public bool CheckEmptySpace(Vector3 position)
     {
-        return GetNearGridObjects(position).Count == 0;
+        bool _emptySpace = GetNearGridObjects(position, out bool _isContainsPlayer).Count == 0;
+        bool _rowIsAvailable = true;
+        if (OneInRow)
+        {
+            List<GridObject> objectsInRow = GetObjectsInRow(position);
+            if(!destroyOtherObjectsInRow && objectsInRow.Count != 0)
+                _rowIsAvailable = false;
+            else if (destroyOtherObjectsInRow)
+            {
+                foreach(var _obj in objectsInRow)
+                    if(Time.time < _obj.DestroyBlockTime)
+                    {
+                        _rowIsAvailable = false;
+                        break;
+                    }
+            }
+        }
+        return _emptySpace && _rowIsAvailable && !_isContainsPlayer;
     }
     public bool CheckEmptySpace()
     {
-        return GetNearGridObjects(tr.position).Count == 0;
+        return CheckEmptySpace(tr.position);
+    }
+    public List<GridObject> GetObjectsInRow(Vector3 position, bool ignoreInstance = true)
+    {
+        position = GridInteractions.Instance.GetNearestTilePosition(position);
+        List<GridObject> _objects = new List<GridObject>();
+        Collider[] colls = Physics.OverlapBox(position, new Vector3(GridInteractions.tileSize.x / 2f, 100f, 100f), Quaternion.identity);
+        foreach (var col in colls)
+        {
+            if (col.TryGetComponent(out GridObject newObj))
+            {
+                if (ignoreInstance && col.gameObject == gameObject)
+                    continue;
+                _objects.Add(newObj);
+            }
+        }
+        return _objects;
+    }
+    public List<GridObject> GetObjectsInRow(Vector3 position, ObjectType objectsOfType, bool ignoreInstance = true)
+    {
+        position = GridInteractions.Instance.GetNearestTilePosition(position);
+        List<GridObject> _objects = new List<GridObject>();
+        Collider[] colls = Physics.OverlapBox(position, new Vector3(GridInteractions.tileSize.x / 2f, 100f, 100f), Quaternion.identity);
+        foreach (var col in colls)
+        {
+            if (col.TryGetComponent(out GridObject newObj))
+            {
+                if (ignoreInstance && col.gameObject == gameObject)
+                    continue;
+                if (newObj.ObjType == objectsOfType)
+                    _objects.Add(newObj);
+            }
+        }
+        return _objects;
+    }
+    public bool IsOneInRow(Vector3 position)
+    {
+        return GetObjectsInRow(position, ObjectType.coin).Count == 0;
     }
     #endregion
     #region global interactions
     //устанавливает объект в центр ближайшейшего тайла сетки
-    public void PlaceOnTiles(Vector3 newPosition)
+    public void PlaceOnTiles(Vector3 newPosition, bool applyOffset = false)
     {
-        tr.position = GridInteractions.Instance.GetNearestTilePosition(newPosition);
+        Vector3 position = GridInteractions.Instance.GetNearestTilePosition(newPosition);
+        if (applyOffset && GridInteractions.Instance && GridInteractions.Instance.StandForGridObjects) 
+        {
+            position.y = verticalOffset + GridInteractions.Instance.StandForGridObjects.position.y; 
+        }
+        tr.position = position;
+
+        if(OneInRow && destroyOtherObjectsInRow)
+        {
+            bool otherObjectDeleted = false;
+            Vector3 otherObjectPosition = Vector3.zero;
+            foreach (var _obj in GetObjectsInRow(position, ObjType))
+            {
+                otherObjectDeleted = true;
+                otherObjectPosition = _obj.transform.position;
+                _obj.DestroyObject();
+            }
+            if (otherObjectDeleted)
+                OnOtherObjectInRowDeleted?.Invoke(otherObjectPosition);
+        }
+
+        currentFloor = GridInteractions.Instance.GetFloorId(transform.position - Vector3.up * verticalOffset);
     }
     public void SetMaterial(GridObjectSelection selection)
     {
@@ -200,18 +344,22 @@ public class GridObject : MonoBehaviour
                 mesh.renderer.material = mat;
         }
     }
-    public void InteractWithObject(ObjectType _interactor)
+    public void InteractWithObject(GridObject gridObject)
     {
-        foreach(var _inter in interactions)
-        {
-            _inter.Interact(_interactor);
-        }
-    }
-    public bool IsInteractWithObject(ObjectType _interactor)
-    {
+        if (gridObject == null)
+            return;
         foreach (var _inter in interactions)
         {
-            if (_inter.IsInteractsWith(_interactor))
+            _inter.Interact(gridObject.ObjType);
+        }
+    }
+    public bool IsInteractsWithObject(GridObject gridObject)
+    {
+        if (gridObject == null)
+            return false;
+        foreach (var _inter in interactions)
+        {
+            if (_inter.IsInteractsWith(gridObject.ObjType))
                 return true;
         }
         return false;

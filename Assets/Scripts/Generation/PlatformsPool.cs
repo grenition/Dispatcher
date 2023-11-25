@@ -64,7 +64,7 @@ public class PlatformBuffer
                 if(i == 0 && !platforms[j].IsPlatformActive() || i == 1)
                 {
                     platform = platforms[j];
-                    platforms.MoveItemAtIndexToFront(j);
+                    platforms.CycleMoveRight();
                     return platform;
                 }
             }
@@ -98,6 +98,7 @@ public class PlatformsPool : MonoBehaviour
 
     //parameters
     [SerializeField] private PlatformBuffer[] platforms;
+    [SerializeField] private Platform[] levelPlatforms;
 
     [SerializeField] private Transform platformsParent;
 
@@ -115,7 +116,7 @@ public class PlatformsPool : MonoBehaviour
     {
         initialized = true;
     }
-    private Platform FindLevelPlatform(PlatformGenerationType type)
+    private Platform FindPlatform(PlatformGenerationType type)
     {
         if (!initialized)
             Initialize();
@@ -139,6 +140,25 @@ public class PlatformsPool : MonoBehaviour
         if (!Instance.initialized)
             Instance.Initialize();
 
-        return Instance.FindLevelPlatform(type);
+        return Instance.FindPlatform(type);
+    }
+    public static bool IsLevelAvailable(int levelId)
+    {
+        if (Instance == null)
+            return false;
+        return !(levelId < 0 || levelId >= Instance.levelPlatforms.Length);
+            
+    }
+    public static Platform GetLevelPlatform(int levelId)
+    {
+        if (Instance == null)
+            return null;
+        if (!Instance.initialized)
+            Instance.Initialize();
+        if (levelId >= Instance.levelPlatforms.Length || levelId < 0)
+            return null;
+        Platform plat = Instantiate(Instance.levelPlatforms[levelId], PlatformsPool.PlatformsParent);
+        plat.DisablePlatform(false);
+        return plat;
     }
 }

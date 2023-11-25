@@ -59,14 +59,12 @@ public class GameController : MonoBehaviour
 
         int level = PlayerPrefs.GetInt("CompletedLevel");
         CompletedLevels = level;
-        level++;
 
-        PlatformGenerationType levelType = GetLevel(level);
-
-        if (levelType == PlatformGenerationType.tonnels)
+        if (!PlatformsPool.IsLevelAvailable(level))
             return;
 
-        PlatformGenerator.GenerationType = levelType;
+        PlatformGenerator.CurrentLevelId = level;
+        PlatformGenerator.GenerationType = PlatformGenerationType.level;
         targetPlatformSpeed = lobbyBoostedPlatformSpeed;
         levelStarted = true;
         OnLevelStarted?.Invoke();
@@ -108,21 +106,6 @@ public class GameController : MonoBehaviour
     public void Restart()
     {
         SceneLoader.ReloadCurrentScene();
-    }
-
-    public static PlatformGenerationType GetLevel(int levelId)
-    {
-        switch (levelId)
-        {
-            case 1:
-                return PlatformGenerationType.level1;
-            case 2:
-                return PlatformGenerationType.level2;
-            case 3:
-                return PlatformGenerationType.level3;
-            default:
-                return PlatformGenerationType.tonnels;
-        }
     }
     private IEnumerator ChangeGenerationAfterTime(PlatformGenerationType generation, float holdTime)
     {

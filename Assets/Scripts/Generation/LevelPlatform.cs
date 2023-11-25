@@ -10,9 +10,11 @@ public struct InventoryUnitData
 }
 public class LevelPlatform : Platform
 {
+    [Header("Level Settings")]
     [SerializeField] private InventoryUnitData[] startInventory;
     [SerializeField] private float levelSpeed = 3f;
 
+    [Header("Optional")]
     [SerializeField] private float offset = 10f;
 
     private bool levelStarted = false;

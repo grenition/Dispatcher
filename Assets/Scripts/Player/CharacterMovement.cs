@@ -14,6 +14,7 @@ public class CharacterMovement : MonoBehaviour
     //public values
     public MovementData CurrentMovementData;
     public bool LockMovement { get; set; }
+    public float HorizontalSpeed { get => horizontalSpeed; }
 
     //parameters
     [Header("Velocity")]

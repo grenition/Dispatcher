@@ -9,6 +9,7 @@ public class Platform : MonoBehaviour
     public bool IsPooling { get; set; }
 
     //parameters
+    [Header("Platfrom parameters")]
     [SerializeField] private Transform begin;
     [SerializeField] private Transform end;
     [SerializeField] private PlatformGenerationType platformType = PlatformGenerationType.tonnels;

@@ -499,7 +499,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 1596
+  m_VersionIndex: 1599
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -657,7 +657,7 @@ Transform:
   m_GameObject: {fileID: 5281836971462363156}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: 0, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: -34, y: 3, z: 2.75}
+  m_LocalPosition: {x: -33, y: 3, z: 3}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -679,14 +679,20 @@ MonoBehaviour:
   gridObjectType: 0
   interactable: 1
   correctByGridOnAwake: 1
-  gridCorrection: 1
   dontDestroyOnPlatformSpawn: 1
   onlyVerticalMovement: 1
+  canBePlacedOnOtherObjects: 0
+  canPlaceOtherObjectsOnRoof: 1
+  oneInRow: 0
+  destroyOtherObjectsInRow: 0
+  destroyByOtherObjectInRowThreshold: 0.5
   objectType: 4
   objectSize: {x: 10.7, y: 2.97, z: 1.18}
-  objectCenter: {x: -4.92, y: 0.37, z: 0}
+  objectCenter: {x: -4.92, y: 0.15, z: 0}
   materialsPreset: {fileID: 11400000, guid: 5dfe93c9b7dc90c44b645dd5462c112f, type: 2}
-  selectionScaleMultiplier: 0.906
+  verticalOffset: 1.35
+  isPooled: 0
+  visualizeGrid: 1
 --- !u!65 &6581692632075131155
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -706,8 +712,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 5.846691, y: 1.04, z: 1.53}
-  m_Center: {x: -2.421482, y: -0.050000012, z: -0.15999997}
+  m_Size: {x: 5.7480946, y: 1.04, z: 1.53}
+  m_Center: {x: -2.3721838, y: -0.050000012, z: -0.15999997}
 --- !u!1 &6543826594436073884
 GameObject:
   m_ObjectHideFlags: 0

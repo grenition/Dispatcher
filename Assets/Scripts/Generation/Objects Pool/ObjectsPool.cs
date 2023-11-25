@@ -27,7 +27,7 @@ public class ObjectsPoolUnit
             {
                 GridObject obj = bufferedObjects[i];
                 obj.gameObject.SetActive(true);
-                bufferedObjects.CycleMoveDown();
+                bufferedObjects.CycleMoveRight();
                 obj.ResetObject();
                 return obj;
             }
@@ -35,7 +35,7 @@ public class ObjectsPoolUnit
         GridObject _obj = bufferedObjects[bufferedObjects.Count - 1];
         _obj.gameObject.SetActive(true);
         _obj.ResetObject();
-        bufferedObjects.CycleMoveDown();
+        bufferedObjects.CycleMoveRight();
         return _obj;
     }
 }

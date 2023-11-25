@@ -247,7 +247,7 @@ Transform:
   m_GameObject: {fileID: 5281836971462363156}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071058, y: -0, z: -0, w: 0.7071078}
-  m_LocalPosition: {x: -34, y: 3, z: 2.75}
+  m_LocalPosition: {x: -33, y: 3, z: 3}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -270,14 +270,14 @@ MonoBehaviour:
   gridObjectType: 0
   interactable: 1
   correctByGridOnAwake: 1
-  gridCorrection: 1
   dontDestroyOnPlatformSpawn: 1
   onlyVerticalMovement: 1
+  canBePlacedOnOtherObjects: 0
   objectType: 4
   objectSize: {x: 12.2, y: 2.97, z: 1.18}
   objectCenter: {x: -6, y: 0.37, z: 0}
   materialsPreset: {fileID: 11400000, guid: 5dfe93c9b7dc90c44b645dd5462c112f, type: 2}
-  selectionScaleMultiplier: 0.906
+  verticalOffset: 1.5
 --- !u!65 &6581692632075131155
 BoxCollider:
   m_ObjectHideFlags: 0

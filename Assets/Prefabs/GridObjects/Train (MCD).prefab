@@ -12,7 +12,7 @@ GameObject:
   m_Layer: 7
   m_Name: start
   m_TagString: Untagged
-  m_Icon: {fileID: 2974397684917235467, guid: 0000000000000000d000000000000000, type: 0}
+  m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -151,7 +151,7 @@ Transform:
   m_GameObject: {fileID: 5281836971462363156}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071058, y: -0, z: -0, w: 0.7071078}
-  m_LocalPosition: {x: -34, y: 3, z: 2.75}
+  m_LocalPosition: {x: -33, y: 3, z: 3}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -175,14 +175,20 @@ MonoBehaviour:
   gridObjectType: 0
   interactable: 0
   correctByGridOnAwake: 1
-  gridCorrection: 0
   dontDestroyOnPlatformSpawn: 1
   onlyVerticalMovement: 1
+  canBePlacedOnOtherObjects: 0
+  canPlaceOtherObjectsOnRoof: 1
+  oneInRow: 0
+  destroyOtherObjectsInRow: 0
+  destroyByOtherObjectInRowThreshold: 0.5
   objectType: 4
   objectSize: {x: 30.2, y: 2.97, z: 1.18}
   objectCenter: {x: 14.63, y: 0.37, z: 0}
   materialsPreset: {fileID: 11400000, guid: 5dfe93c9b7dc90c44b645dd5462c112f, type: 2}
-  selectionScaleMultiplier: 0.906
+  verticalOffset: 1.35
+  currentFloor: 0
+  visualizeGrid: 1
 --- !u!65 &6581692632075131155
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -232,7 +238,7 @@ GameObject:
   m_Layer: 7
   m_Name: end
   m_TagString: Untagged
-  m_Icon: {fileID: 2974397684917235467, guid: 0000000000000000d000000000000000, type: 0}
+  m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1

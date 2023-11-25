@@ -9,7 +9,7 @@ public class GridObjectInteraction : MonoBehaviour
 
     protected bool interacted = false;
 
-    public bool IsInteractsWith(ObjectType interactor)
+    public virtual bool IsInteractsWith(ObjectType interactor)
     {
         return interactor == interactsWith && !interacted;
     }

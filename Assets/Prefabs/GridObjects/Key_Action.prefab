@@ -13,7 +13,7 @@ GameObject:
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
-  m_Icon: {fileID: 0}
+  m_Icon: {fileID: 8418204508859773708, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 350317732847598663}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071114, y: 0.00000007226361, z: 0.0000011078467, w: 0.7071022}
-  m_LocalPosition: {x: -0.0021896362, y: -0.00025463104, z: -1.3420744}
+  m_LocalPosition: {x: -0.0021896362, y: -0.00024175644, z: -5.9670744}
   m_LocalScale: {x: 0.5000001, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -922,7 +922,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7303345664003178556}
   - component: {fileID: 4676584556732529920}
-  m_Layer: 6
+  m_Layer: 7
   m_Name: Key_Action
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -938,7 +938,7 @@ Transform:
   m_GameObject: {fileID: 8020115031686801283}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071058, y: -0, z: -0, w: 0.7071078}
-  m_LocalPosition: {x: -74, y: 5.5, z: 2.749993}
+  m_LocalPosition: {x: -75, y: 5.5, z: 3}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -961,14 +961,16 @@ MonoBehaviour:
   gridObjectType: 1
   interactable: 1
   correctByGridOnAwake: 1
-  gridCorrection: 1
   dontDestroyOnPlatformSpawn: 0
   onlyVerticalMovement: 0
+  canBePlacedOnOtherObjects: 0
+  canPlaceOtherObjectsOnRoof: 1
+  oneInRow: 0
   objectType: 1
-  objectSize: {x: 0, y: 0, z: 0}
+  objectSize: {x: 2.49, y: 2, z: 1.6}
   objectCenter: {x: 0, y: 0, z: 0}
   materialsPreset: {fileID: 11400000, guid: 5dfe93c9b7dc90c44b645dd5462c112f, type: 2}
-  selectionScaleMultiplier: 0.9
+  verticalOffset: 1
 --- !u!1001 &205144799600808242
 PrefabInstance:
   m_ObjectHideFlags: 0

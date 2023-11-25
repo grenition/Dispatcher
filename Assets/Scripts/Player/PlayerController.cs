@@ -6,29 +6,39 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour
 {
     //public values
-    public static PlayerController instance;
+    public static PlayerController Instance { get; private set; }
     public static bool Alive
     {
         get
         {
-            if (instance != null)
-                return instance.alive;
+            if (Instance != null)
+                return Instance.alive;
             return false;
         }
     }
+    public float HorizontalSpeed { get => characterMovement.HorizontalSpeed; }
 
     //parameters
     [Header("Living")]
     [SerializeField] private bool alive = true;
     [Header("Movement")]
+    [SerializeField] private float minVerticalDistanceToSplitCoinsToLayers = 3f;
     [SerializeField] private float minDistanceToMove = 1f;
     [SerializeField] private ObstaclesDetector obstaclesDetector;
+    [Header("Controls")]
+    [SerializeField] private float clickDelay = 0.1f;
 
     //local values
     private CharacterMovement characterMovement;
     private CharacterAnimations characterAnimations;
-    private GridObject currentCoin;
+    private GridObject masterCoin;
+    private GridObject targetCoin;
     private List<GridObject> coins = new List<GridObject>();
+    private int playerFloor;
+    private bool reservePositionIsDefined = false;
+    private Vector3 reservePosition = Vector3.zero;
+
+
 
     #region unity events
     private void OnEnable()
@@ -41,24 +51,62 @@ public class PlayerController : MonoBehaviour
     }
     private void Awake()
     {
-        if (instance == null)
-            instance = this;
+        if (Instance == null)
+            Instance = this;
         else
             Destroy(gameObject);
 
         characterMovement = GetComponent<CharacterMovement>();
         characterAnimations = GetComponent<CharacterAnimations>();
     }
+    private void Start()
+    {
+        if (masterCoin == null)
+        {
+            masterCoin = ObjectsPool.GetNewGridObject(ObjectType.coin);
+            if (masterCoin != null)
+                masterCoin.gameObject.SetActive(false);
+        }
+    }
     private void Update()
     {
-        CheckCurrentCoin();
-        if (coins.Count != 0)
-            MoveToTarget(coins[0].transform.position);
+        //CheckDoubleClick();
+    }
+    private void FixedUpdate()
+    {
+        playerFloor = GridInteractions.Instance.GetFloorId(transform.position);
 
-        if(Input.GetKeyDown(KeyCode.Mouse0) && GridInteractions.Instance.CurrentInteractableObject == null)
+        CheckCoins();
+
+        if (coins.Count > 0)
         {
-            if (Inventory.IsObjectAvailable(ObjectType.coin))
-                Inventory.StartPlacingGridObject(ObjectType.coin);
+            if (targetCoin == null || (targetCoin != null && transform.position.x - targetCoin.transform.position.x < 0f)
+                || !targetCoin.gameObject.activeSelf || targetCoin.CurrentFloor > playerFloor)
+            {
+                targetCoin = GetTargetCoint(playerFloor);
+            }
+            if (targetCoin != null)
+            {
+                MoveToTarget(targetCoin.transform.position);
+            }
+        }
+        if (targetCoin == null)
+        {
+            if (!reservePositionIsDefined) {
+                reservePosition = transform.position;
+                reservePositionIsDefined = true;
+            }
+            MoveToTarget(reservePosition);
+        }
+        if (GameInput.PlacingArea.IsSinglePressed() && Time.time - GameInput.PlacingArea.PressTime > clickDelay 
+            && GridInteractions.Instance.CurrentInteractableObject == null)
+        {
+            if (GridInteractions.Instance.CheckPlaceAvailabilityForGridObject(masterCoin, out Vector3 point))
+            {
+                GridObject coin = ObjectsPool.GetGridObject(ObjectType.coin);
+                coin.PlaceOnAwake = false;
+                GridInteractions.Instance.PlaceObjectSimple(coin, point);
+            }
         }
     }
     #endregion
@@ -76,19 +124,43 @@ public class PlayerController : MonoBehaviour
         }
         characterMovement.GoNearestLine(transform.position + dir);
     }
-    private void CheckCurrentCoin()
+    private void CheckCoins()
     {
         if (coins.Count == 0)
-            return;
-        float distance = transform.position.x - coins[0].transform.position.x;
-        if (distance < 0)
         {
-            coins.Remove(coins[0]);
+            targetCoin = null;
+            return;
+        }
+
+        int i = 0;
+        while(i < coins.Count)
+        {
+            float distance = transform.position.x - coins[i].transform.position.x;
+            if (distance < 0 || !coins[i].gameObject.activeSelf)
+            {
+                if (targetCoin == coins[i])
+                    targetCoin = null;
+                coins.Remove(coins[i]);
+                continue;
+            }
+            i++;
         }
     }
-    private void OnCoinPlaced(GridObject coinObj = default)
+    private GridObject GetTargetCoint(int floorId)
     {
-        if (coinObj == null || coinObj.ObjType != ObjectType.coin)
+        foreach(var coin in coins)
+        {
+            if (coin.CurrentFloor <= floorId)
+            {
+                reservePositionIsDefined = false;
+                return coin;
+            }
+        }
+        return null;
+    }
+    private void OnCoinPlaced(GridObject coinObj)
+    {
+        if (coinObj == null || coinObj.ObjType != ObjectType.coin || coins.Contains(coinObj))
             return;
         float distance = transform.position.x - coinObj.transform.position.x;
         if (distance < 0)
@@ -126,19 +198,19 @@ public class PlayerController : MonoBehaviour
     #region global interactions
     public static void Die()
     {
-        if (instance == null)
+        if (Instance == null)
             return;
-        instance.alive = false;
-        instance.characterMovement.LockMovement = true;
-        instance.characterAnimations.DieAnimation();
+        Instance.alive = false;
+        Instance.characterMovement.LockMovement = true;
+        Instance.characterAnimations.DieAnimation();
     }
     public void Revive()
     {
-        if (instance == null)
+        if (Instance == null)
             return;
-        instance.alive = true;
-        instance.characterMovement.LockMovement = false;
-        instance.characterAnimations.ResetAnimator();
+        Instance.alive = true;
+        Instance.characterMovement.LockMovement = false;
+        Instance.characterAnimations.ResetAnimator();
     }
     #endregion
 }

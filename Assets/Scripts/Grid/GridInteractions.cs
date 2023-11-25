@@ -8,6 +8,8 @@ public class GridInteractions : MonoBehaviour
     public static GridInteractions Instance { get; private set; }
     public Transform InteractionEnd { get => interactionEnd; }
     public Transform InteractionBegin { get => interactionBegin; }
+    public Transform StandForGridObjects { get => standForGridObjects; }
+    public LayerMask GridObjectsLayerMask { get => gridObjectsLayerMask; }
 
     //events
     public static event GridObjectEventHandler OnGridObjectPlaced;
@@ -15,44 +17,44 @@ public class GridInteractions : MonoBehaviour
 
     //parameters
     [Header("Grid Parameters")]
-    [SerializeField] private Vector2 tileSize = new Vector2(3f, 3f);
-    [SerializeField] private Vector2 gridOffset = Vector2.zero;
+    public static Vector2 tileSize = new Vector2(3f, 3f);
     [Tooltip("x field: minimal vertical coordinate, y field: maximum vertical coordinate")]
     [SerializeField] private Vector2 minAndMaxVericalGridCoordinates = new Vector2(-1f, 1f);
 
+    [Header("Grid Levels")]
+    [SerializeField] private float zeroFloorHeight = 2f;
 
-    [Header("Legacy")]
+    [Header("Other")]
     [SerializeField] private LayerMask gridLayerMask;
     [SerializeField] private LayerMask gridObjectsLayerMask;
     [SerializeField] private float maxDistance = 100f;
     [SerializeField] private float smoothGridTranslationMultiplier = 10f;
     [SerializeField] private Transform interactionBegin;
     [SerializeField] private Transform interactionEnd;
+    [SerializeField] private Transform standForGridObjects;
 
     //local values
     private GridObject currentObjectCopy;
     private GridObject currentObjectInstance;
     private Camera mainCamera;
-    private GameObject lastObject;
     private Vector3 targetPosition;
     private Vector3 savedObjectLocalPosition;
-    private Transform savedObjectParent;
     private float currentDisplacement = 0f;
-
+    private GameObject detectedObject;
 
     #region Grid Logic
-    private void OnDrawGizmos()
-    {
-        for(int y = -1; y < 2; y++)
-        {
-            for(int x = 0; x < 50; x++)
-            {
-                Gizmos.color = new Color(1f, 1f, 1f, 0.2f);
-                Vector3 _center = new Vector3(-x * tileSize.x + currentDisplacement, 4f, -y * tileSize.y);
-                Gizmos.DrawCube(_center, new Vector3(tileSize.x, 1f, tileSize.y));
-            }
-        }
-    }
+    //private void OnDrawGizmos()
+    //{
+    //    for(int y = -1; y < 2; y++)
+    //    {
+    //        for(int x = 0; x < 50; x++)
+    //        {
+    //            Gizmos.color = new Color(1f, 1f, 1f, 0.2f);
+    //            Vector3 _center = new Vector3(-x * tileSize.x + currentDisplacement, 4f, -y * tileSize.y);
+    //            Gizmos.DrawCube(_center, new Vector3(tileSize.x, 1f, tileSize.y));
+    //        }
+    //    }
+    //}
 
     private void UpdateDisplacement()
     {
@@ -78,9 +80,21 @@ public class GridInteractions : MonoBehaviour
 
         return new Vector3
         {
-            x = tileCoordinates.x * tileSize.x + gridOffset.x + displacement,
+            x = tileCoordinates.x * tileSize.x + displacement,
             y = position.y,
-            z = tileCoordinates.y * tileSize.y + gridOffset.y
+            z = tileCoordinates.y * tileSize.y
+        };
+    }
+    public static Vector3 ConvertToGridPosition(Vector3 position)
+    {
+        Vector2 tileCoordinates = new Vector2((position.x) / tileSize.x, position.z / tileSize.y);
+        tileCoordinates.x = Mathf.Round(tileCoordinates.x);
+        tileCoordinates.y = Mathf.Round(tileCoordinates.y);
+        return new Vector3
+        {
+            x = tileCoordinates.x * tileSize.x,
+            y = position.y,
+            z = tileCoordinates.y * tileSize.y
         };
     }
     #endregion
@@ -107,7 +121,7 @@ public class GridInteractions : MonoBehaviour
         UpdateDisplacement();
 
         //при нажатии на кнопку пытаемся определить объект, который находится под курсором
-        if (Input.GetKeyDown(KeyCode.Mouse0))
+        if (GameInput.PlacingArea.IsDoublePressed())
             DetectObject();
         
         //при отжатии кнопки пытаемся поставить объект или удаляем его
@@ -198,9 +212,9 @@ public class GridInteractions : MonoBehaviour
         {
             //проверяем наличие объектов внутри текущего, если находим, то применяем свойство
             List<GridObject> _objects = currentObjectCopy.GetNearGridObjects(currentObjectCopy.transform.position);
-            if (_objects.Count > 0 && _objects[0].IsInteractWithObject(currentObjectCopy.ObjType))
+            if (_objects.Count > 0 && _objects[0].IsInteractsWithObject(currentObjectCopy))
             {
-                _objects[0].InteractWithObject(currentObjectCopy.ObjType);
+                _objects[0].InteractWithObject(currentObjectCopy);
                 SoundController.PlayAudioClip("ObjectInteraction");
                 //вызываем событие
                 OnGridObjectPlaced?.Invoke(currentObjectCopy);
@@ -221,7 +235,10 @@ public class GridInteractions : MonoBehaviour
                     //поиск последней активной платформы на сцене, чтобы сделать новый объект ее дочерним
                     Platform plat = PlatformGenerator.GetLastPlatform();
                     if (plat == null)
+                    {
+                        CurrentInteractableObject = null;
                         return;
+                    }
 
                     //спавн копии текущего интерактивного объекта и применение ему свойств статического
                     currentObjectCopy.IsInterating = false;
@@ -238,6 +255,14 @@ public class GridInteractions : MonoBehaviour
         }
         CurrentInteractableObject = null;
     }
+    private bool MouseRaycast(out RaycastHit hit, bool ignoreRoofs = true)
+    {
+        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        LayerMask mask = gridLayerMask;
+        if (!ignoreRoofs)
+            mask = mask | gridObjectsLayerMask;
+        return Physics.Raycast(ray, out hit, maxDistance, mask);
+    }
     #endregion
     #region Updating functions
     private void UpdateTargetTile()
@@ -246,9 +271,20 @@ public class GridInteractions : MonoBehaviour
         if(CurrentInteractableObject == null)
             return;
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, gridLayerMask))
+        LayerMask mask = gridLayerMask;
+        if (CurrentInteractableObject.CanBePlacedOnOtherObjects)
+            mask = mask | gridObjectsLayerMask;
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, mask))
         {
-            targetPosition = GetNearestTilePosition(hit.point, true);
+            if(hit.collider.gameObject != detectedObject)
+            {
+                if (hit.collider.TryGetComponent(out GridObject obj))
+                    if (!obj.CanPlaceObjectsOnRoof)
+                        return;
+            }
+            detectedObject = hit.collider.gameObject;
+
+            targetPosition = GetNearestTilePosition(hit.point, true) + Vector3.up * CurrentInteractableObject.VericalOffset;
         }
     }
     public Vector3 GetNearestToMousePosition()
@@ -297,7 +333,7 @@ public class GridInteractions : MonoBehaviour
         if (CurrentInteractableObject.TypeOfGridObject == GridObjectType.action)
         {
             List<GridObject> gridObjects = CurrentInteractableObject.GetNearGridObjects(CurrentInteractableObject.transform.position);
-            if (gridObjects.Count > 0 && gridObjects[0].IsInteractWithObject(CurrentInteractableObject.ObjType))
+            if (gridObjects.Count > 0 && gridObjects[0].IsInteractsWithObject(CurrentInteractableObject))
                 _material = GridObjectSelection.greenMaterial;
         }
         else
@@ -314,8 +350,67 @@ public class GridInteractions : MonoBehaviour
     {
         if (gridObject == null)
             return;
-        print(gridObject.ObjType);
         Inventory.RemoveObjectFromInventory(gridObject.ObjType);
+    }
+    public bool PlaceObject(GridObject gridObject, bool checkEmptySpace = true)
+    {
+        if (gridObject == null)
+            return false;
+
+        if (CheckPlaceAvailabilityForGridObject(gridObject, out Vector3 point))
+        {
+            gridObject.PlaceOnTiles(point + Vector3.up * gridObject.VericalOffset);
+            Platform plat = PlatformGenerator.GetLastPlatform();
+            if (plat != null)
+                gridObject.transform.parent = plat.transform;
+            gridObject.LockReplacing();
+            OnNewGridObjectPlaced?.Invoke(gridObject);
+            return true;
+        }
+        return false;
+    }
+    /// <summary>
+    /// placing oobject without checking empty space and getting raycast from camera
+    /// </summary>
+    /// <returns></returns>
+    public bool PlaceObjectSimple(GridObject gridObject, Vector3 point)
+    {
+        if (gridObject == null)
+            return false;
+
+        gridObject.PlaceOnTiles(point + Vector3.up * gridObject.VericalOffset);
+        Platform plat = PlatformGenerator.GetLastPlatform();
+        if (plat != null)
+            gridObject.transform.parent = plat.transform;
+        gridObject.LockReplacing();
+        OnNewGridObjectPlaced?.Invoke(gridObject);
+        return true;
+    }
+    public bool CheckPlaceAvailabilityForGridObject(GridObject gridObject, out Vector3 point)
+    {
+        point = Vector3.zero;
+        if (MouseRaycast(out RaycastHit hit, !gridObject.CanBePlacedOnOtherObjects))
+        {
+            if (hit.collider.TryGetComponent(out GridObject obj))
+            {
+                if (!obj.CanPlaceObjectsOnRoof)
+                    return false;
+            }
+            if (!gridObject.CheckEmptySpace(hit.point + Vector3.up * gridObject.VericalOffset))
+                return false;
+
+            point = hit.point;
+            return true;
+        }
+        return false;
+    }
+    public int GetFloorId(Vector3 position)
+    {
+        float _height = position.y - standForGridObjects.position.y;
+        if (_height > zeroFloorHeight)
+            return 1;
+        else
+            return 0;
     }
     #endregion
 }
