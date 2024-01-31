@@ -23,7 +23,7 @@ public class CharacterAnimations : MonoBehaviour
         anim.SetFloat("Horizontal", currentHorizontal);
 
         isGrounded = Mathf.Abs(mov.CurrentMovementData.movement.y) < minVerticalMagnitude;
-        anim.SetBool("IsGrounded", isGrounded);
+        anim.SetBool("IsGrounded", mov.IsGrounded);
     }
     public void DieAnimation()
     {

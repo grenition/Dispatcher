@@ -43,6 +43,7 @@ public struct GridObjectBuffer
     public Vector3 localScale;
     public Transform parent;
 }
+[RequireComponent(typeof(BoxCollider))]
 public class GridObject : MonoBehaviour
 {
     #region public values
@@ -72,7 +73,9 @@ public class GridObject : MonoBehaviour
     public float DestroyBlockTime { get; private set; }
     public int CurrentFloor { get => currentFloor; }
     public bool PlaceOnAwake { get => placeOnAwake; set { placeOnAwake = value; } }
-
+    public bool CorrectByGridWhileMoves { get => correctByGridWhileMoves; }
+    public bool FastPlacing { get => fastPlacing; }
+    public Transform FastPlace { get => fastPlace; }
     public Action<Vector3> OnOtherObjectInRowDeleted;
 
     #endregion
@@ -87,6 +90,9 @@ public class GridObject : MonoBehaviour
     [SerializeField] private bool canPlaceOtherObjectsOnRoof = true;
     [SerializeField] private bool oneInRow = false;
     [SerializeField] private bool destroyOtherObjectsInRow = false;
+    [SerializeField] private bool correctByGridWhileMoves = true;
+    [SerializeField] private bool fastPlacing = false;
+    [SerializeField] private Transform fastPlace;
     [SerializeField] private float destroyByOtherObjectInRowThreshold = 0.5f;
     [SerializeField] private ObjectType objectType = ObjectType.ramp;
     [SerializeField] private Vector3 objectSize;
@@ -103,29 +109,17 @@ public class GridObject : MonoBehaviour
     private bool isInteracting = false;
     private GridObjectBuffer savedParameters;
     private bool isPooled = false;
-    [SerializeField] private int currentFloor;
+    private int currentFloor;
     private bool placeOnAwake = true;
+    private Vector3 boxScale = Vector3.one;
+    private Vector3 boxOffset = Vector3.zero;
+    [SerializeField] private BoxCollider boxCollider;
     #endregion
 
 #if UNITY_EDITOR
     public bool visualizeGrid = true;
     private void OnDrawGizmos()
     {
-        if (Application.isPlaying || !transform.hasChanged)
-            return;
-        transform.position = GridInteractions.ConvertToGridPosition(transform.position);
-        transform.hasChanged = false;
-
-    }
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
-        Gizmos.DrawCube(transform.position, new Vector3(3f, 2f, 2f));
-        Gizmos.color = new Color(0f, 1f, 0f, 0.1f);
-        Gizmos.DrawCube(objectCenter + transform.position, objectSize);
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawSphere(transform.position - Vector3.up * verticalOffset, 0.1f);
-
         if (visualizeGrid)
         {
             Vector3 pos = transform.position;
@@ -139,13 +133,51 @@ public class GridObject : MonoBehaviour
                 }
             }
         }
+        if (Application.isPlaying || !transform.hasChanged)
+            return;
+        Vector3 position = transform.position;
+        transform.position = GridInteractions.ConvertToGridPosition(position);
+        transform.hasChanged = false;
+
+    }
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = new Color(1f, 0f, 0f, 0.2f);
+        Gizmos.DrawCube(transform.position, new Vector3(3f, 2f, 2f));
+        Gizmos.color = new Color(0f, 1f, 0f, 0.5f);
+
+        if (boxCollider != null)
+        {
+            Vector3 scale = new Vector3
+            {
+                x = transform.lossyScale.x * boxCollider.size.x,
+                y = transform.lossyScale.y * boxCollider.size.y,
+                z = transform.lossyScale.z * boxCollider.size.z
+            };
+            scale = transform.TransformDirection(scale);
+            scale.x = Mathf.Abs(scale.x);
+            scale.y = Mathf.Abs(scale.y);
+            scale.z = Mathf.Abs(scale.z);
+
+            Vector3 offsetPosition = new Vector3
+            {
+                x = transform.lossyScale.x * boxCollider.center.x,
+                y = transform.lossyScale.y * boxCollider.center.y,
+                z = transform.lossyScale.z * boxCollider.center.z
+            };
+            Gizmos.DrawCube(transform.position + transform.TransformDirection(offsetPosition), scale);
+        }
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawSphere(transform.position - Vector3.up * verticalOffset, 0.1f);
     }
 #endif
     private void Awake()
     {
         tr = transform;
+        boxCollider = GetComponent<BoxCollider>();
         SaveParameters();
 
+        #region Getting components
         foreach (var mesh in GetComponentsInChildren<Renderer>(true))
         {
             MeshRenderComponents comp = new MeshRenderComponents
@@ -163,12 +195,34 @@ public class GridObject : MonoBehaviour
         {
             interactions.Add(_inter);
         }
+        #endregion
     }
     private void Start()
     {
         if(placeOnAwake)
             PlaceOnTiles(tr.position, !canBePlacedOnOtherObjects);
         DestroyBlockTime = Time.time + destroyByOtherObjectInRowThreshold;
+
+        #region Setting values
+        boxScale = new Vector3
+        {
+            x = transform.lossyScale.x * boxCollider.size.x,
+            y = transform.lossyScale.y * boxCollider.size.y,
+            z = transform.lossyScale.z * boxCollider.size.z
+        };
+        boxScale = transform.TransformDirection(boxScale);
+        boxScale.x = Mathf.Abs(boxScale.x);
+        boxScale.y = Mathf.Abs(boxScale.y);
+        boxScale.z = Mathf.Abs(boxScale.z);
+
+        boxOffset = new Vector3
+        {
+            x = transform.lossyScale.x * boxCollider.center.x,
+            y = transform.lossyScale.y * boxCollider.center.y,
+            z = transform.lossyScale.z * boxCollider.center.z
+        };
+        boxOffset = transform.TransformDirection(boxOffset);
+        #endregion
     }
     private void OnEnable()
     {
@@ -181,11 +235,6 @@ public class GridObject : MonoBehaviour
     {
         isInteracting = false;
     }
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.R))
-            PlaceOnTiles(tr.position);
-    }
     #region local functions
     private void SaveParameters()
     {
@@ -197,11 +246,16 @@ public class GridObject : MonoBehaviour
     #endregion
 
     #region cheking objects in local region
+    private Collider[] OverlapBox(Vector3 _position)
+    {
+        return Physics.OverlapBox(_position + boxOffset, boxScale / 2f);
+    }
     //возвращает, находящиеся в объекте объекты типа GridObject
     public List<GridObject> GetNearGridObjects(Vector3 position)
     {
         List<GridObject> list = new List<GridObject>();
-        foreach (var col in Physics.OverlapBox(position + objectCenter, objectSize / 2f))
+
+        foreach (var col in OverlapBox(position))
         {
             if (col.TryGetComponent(out GridObject obj))
             {
@@ -216,7 +270,7 @@ public class GridObject : MonoBehaviour
     {
         isContainsPlayer = false;
         List<GridObject> list = new List<GridObject>();
-        foreach (var col in Physics.OverlapBox(position + objectCenter, objectSize / 2f))
+        foreach (var col in OverlapBox(position))
         {
             if (col.gameObject == gameObject)
                 continue;

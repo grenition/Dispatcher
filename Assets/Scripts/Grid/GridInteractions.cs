@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -41,6 +40,7 @@ public class GridInteractions : MonoBehaviour
     private Vector3 savedObjectLocalPosition;
     private float currentDisplacement = 0f;
     private GameObject detectedObject;
+    private GridObject detectedGridObject;
 
     #region Grid Logic
     //private void OnDrawGizmos()
@@ -121,7 +121,10 @@ public class GridInteractions : MonoBehaviour
         UpdateDisplacement();
 
         //при нажатии на кнопку пытаемся определить объект, который находится под курсором
-        if (GameInput.PlacingArea.IsDoublePressed())
+        bool trigger = GameInput.PlacingArea.IsPressed;
+        if(GameController.Preferences.coinsMovement)
+            trigger = GameInput.PlacingArea.IsDoublePressed;
+        if (trigger)
             DetectObject();
         
         //при отжатии кнопки пытаемся поставить объект или удаляем его
@@ -190,7 +193,7 @@ public class GridInteractions : MonoBehaviour
         if (CurrentInteractableObject != null)
             return;
 
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCamera.ScreenPointToRay(GameInput.PlacingArea.TouchPosition);
         if(Physics.Raycast(ray, out RaycastHit hit, maxDistance, gridObjectsLayerMask))
         {
             if(hit.collider.TryGetComponent(out GridObject obj))
@@ -240,6 +243,8 @@ public class GridInteractions : MonoBehaviour
                         return;
                     }
 
+                    currentObjectCopy.transform.position = GetNearestTilePosition(targetPosition);
+
                     //спавн копии текущего интерактивного объекта и применение ему свойств статического
                     currentObjectCopy.IsInterating = false;
                     GridObject newObject = CreateCopyOfGridObject(currentObjectCopy, true);
@@ -257,7 +262,7 @@ public class GridInteractions : MonoBehaviour
     }
     private bool MouseRaycast(out RaycastHit hit, bool ignoreRoofs = true)
     {
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCamera.ScreenPointToRay(GameInput.PlacingArea.TouchPosition);
         LayerMask mask = gridLayerMask;
         if (!ignoreRoofs)
             mask = mask | gridObjectsLayerMask;
@@ -270,27 +275,48 @@ public class GridInteractions : MonoBehaviour
         //относительно текущего ввода находим ближайшую клетку для перемещения
         if(CurrentInteractableObject == null)
             return;
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCamera.ScreenPointToRay(GameInput.PlacingArea.TouchPosition);
         LayerMask mask = gridLayerMask;
-        if (CurrentInteractableObject.CanBePlacedOnOtherObjects)
+        if (CurrentInteractableObject.CanBePlacedOnOtherObjects || CurrentInteractableObject.FastPlacing)
             mask = mask | gridObjectsLayerMask;
         if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, mask))
         {
+            Vector3 point = hit.point;
+
             if(hit.collider.gameObject != detectedObject)
             {
+                detectedGridObject = null;
+
                 if (hit.collider.TryGetComponent(out GridObject obj))
+                {
+                    detectedGridObject = obj;
                     if (!obj.CanPlaceObjectsOnRoof)
                         return;
+                }
+            }
+            if(detectedGridObject != null)
+            {
+                if (CurrentInteractableObject.FastPlacing && detectedGridObject.FastPlace != null)
+                {
+                    if(detectedGridObject.FastPlace.position.x < InteractionEnd.position.x - 5)
+                        point = detectedGridObject.FastPlace.position;
+                    point.y = StandForGridObjects.position.y;
+                }
+                else if(!CurrentInteractableObject.CanBePlacedOnOtherObjects)
+                    point.y = StandForGridObjects.position.y;
             }
             detectedObject = hit.collider.gameObject;
 
-            targetPosition = GetNearestTilePosition(hit.point, true) + Vector3.up * CurrentInteractableObject.VericalOffset;
+            targetPosition = point;
+            if(CurrentInteractableObject.CorrectByGridWhileMoves)
+                targetPosition = GetNearestTilePosition(point, true);
+            targetPosition += Vector3.up * CurrentInteractableObject.VericalOffset;
         }
     }
     public Vector3 GetNearestToMousePosition()
     {
         Vector3 outPosition = Vector3.zero;
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
+        Ray ray = mainCamera.ScreenPointToRay(GameInput.PlacingArea.TouchPosition);
         if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, gridLayerMask))
         {
             outPosition = GetNearestTilePosition(hit.point, true);
@@ -332,13 +358,13 @@ public class GridInteractions : MonoBehaviour
         GridObjectSelection _material = GridObjectSelection.redMaterial;
         if (CurrentInteractableObject.TypeOfGridObject == GridObjectType.action)
         {
-            List<GridObject> gridObjects = CurrentInteractableObject.GetNearGridObjects(CurrentInteractableObject.transform.position);
+            List<GridObject> gridObjects = CurrentInteractableObject.GetNearGridObjects(targetPosition);
             if (gridObjects.Count > 0 && gridObjects[0].IsInteractsWithObject(CurrentInteractableObject))
                 _material = GridObjectSelection.greenMaterial;
         }
         else
         {
-            if(CurrentInteractableObject.CheckEmptySpace())
+            if(CurrentInteractableObject.CheckEmptySpace(targetPosition))
                 _material = GridObjectSelection.greenMaterial;
         }       
         CurrentInteractableObject.SetMaterial(_material);
@@ -404,6 +430,19 @@ public class GridInteractions : MonoBehaviour
         }
         return false;
     }
+    public static bool CheckGridObjectsUnderCursor()
+    {
+        if (Instance == null)
+            return false;
+        if (Instance.MouseRaycast(out RaycastHit hit, false))
+        {
+            if (hit.collider.TryGetComponent(out GridObject obj))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
     public int GetFloorId(Vector3 position)
     {
         float _height = position.y - standForGridObjects.position.y;
@@ -411,6 +450,14 @@ public class GridInteractions : MonoBehaviour
             return 1;
         else
             return 0;
+    }
+    public Vector3 GetWorldPositionFromSreenSpace(Vector2 position)
+    {
+        Ray ray = mainCamera.ScreenPointToRay(position);
+        LayerMask mask = gridLayerMask;
+        if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, mask))
+            return hit.point;
+        return Vector3.zero;
     }
     #endregion
 }

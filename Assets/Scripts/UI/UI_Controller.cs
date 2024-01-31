@@ -2,17 +2,31 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 public class UI_Controller : MonoBehaviour
 {
     [SerializeField] private float delay = 0.5f;
 
-    public UI_PageAnimation[] mainWindowObjects;
-    public UI_PageAnimation[] gameObjects;
-    public UI_PageAnimation[] dieObjects;
+    [SerializeField] private UI_PageAnimation[] mainWindowObjects;
+    [SerializeField] private UI_PageAnimation[] gameObjects;
+    [SerializeField] private UI_PageAnimation[] dieObjects;
 
-    public TMP_Text completedLevelsText;
+    [SerializeField] private TMP_Text completedLevelsText;
+    [SerializeField] private TMP_Text fpsMonitor;
 
+    [SerializeField] private Toggle coinsMovementToggle; 
+    
+    private IEnumerator FpsCycleEnumerator()
+    {
+        if (fpsMonitor == null)
+            yield break;
+        while (true)
+        {
+            fpsMonitor.text = (Mathf.RoundToInt(1f / Time.deltaTime)).ToString();
+            yield return new WaitForSecondsRealtime(0.25f);
+        }
+    }
     public void StartLevel()
     {
         GameController.Instance.StartLevel();
@@ -20,10 +34,15 @@ public class UI_Controller : MonoBehaviour
 
     private void OnEnable()
     {
+        StartCoroutine(FpsCycleEnumerator());
+
         GameController.OnLobbyOpened += OpenMenuPanel;
         GameController.OnLevelEnded += OpenMenuPanel;
         GameController.OnLevelStarted += OpenGamePanel;
         GameController.OnDie += OpenDiePanel;
+
+        coinsMovementToggle.onValueChanged.AddListener(SetCoinsMovementActive);
+        UpdateSettingsUI();
     }
     private void OnDisable()
     {
@@ -31,6 +50,8 @@ public class UI_Controller : MonoBehaviour
         GameController.OnLevelEnded -= OpenMenuPanel;
         GameController.OnLevelStarted -= OpenGamePanel;
         GameController.OnDie -= OpenDiePanel;
+
+        coinsMovementToggle.onValueChanged.RemoveListener(SetCoinsMovementActive);
     }
 
     public void OpenGamePanel()
@@ -82,6 +103,18 @@ public class UI_Controller : MonoBehaviour
                 p.CloseWithAnimation();
             }
         }
+    }
+    public void SelectLevel(int levelId)
+    {
+        GameController.Instance.SetCurrentLevel(levelId);
+    }
+    public void SetCoinsMovementActive(bool activeState)
+    {
+        GameController.SetCoinsMovementActive(activeState);
+    }
+    public void UpdateSettingsUI()
+    {
+        coinsMovementToggle.isOn = GameController.Preferences.coinsMovement;
     }
     private IEnumerator OpenAfterTime(UI_PageAnimation page)
     {

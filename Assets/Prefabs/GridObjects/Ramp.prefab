@@ -93,11 +93,20 @@ MonoBehaviour:
   dontDestroyOnPlatformSpawn: 0
   onlyVerticalMovement: 0
   canBePlacedOnOtherObjects: 0
+  canPlaceOtherObjectsOnRoof: 1
+  oneInRow: 0
+  destroyOtherObjectsInRow: 0
+  correctByGridWhileMoves: 1
+  fastPlacing: 1
+  fastPlace: {fileID: 0}
+  destroyByOtherObjectInRowThreshold: 0.5
   objectType: 2
   objectSize: {x: 3.58, y: 2.39, z: 1.23}
   objectCenter: {x: 1.23, y: 0.43, z: 0}
   materialsPreset: {fileID: 11400000, guid: 5dfe93c9b7dc90c44b645dd5462c112f, type: 2}
   verticalOffset: 1.06
+  boxCollider: {fileID: 9189038394020098012}
+  visualizeGrid: 0
 --- !u!65 &9189038394020098012
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -117,8 +126,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 2.450936, y: 1, z: 1.4220092}
-  m_Center: {x: 0.72546804, y: 7.1054274e-15, z: -0.21100467}
+  m_Size: {x: 2.145216, y: 1, z: 1.4220092}
+  m_Center: {x: 0.572608, y: -5.5415606e-16, z: -0.21100467}
 --- !u!1 &6044833677281446691
 GameObject:
   m_ObjectHideFlags: 0

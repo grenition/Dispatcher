@@ -353,7 +353,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5206848401280964269
 Transform:
   m_ObjectHideFlags: 0
@@ -1767,7 +1767,7 @@ MonoBehaviour:
   m_PreserveMeshAssetOnDestroy: 0
   assetGuid: 
   m_Mesh: {fileID: 0}
-  m_VersionIndex: 1599
+  m_VersionIndex: 1602
   m_IsSelectable: 1
   m_SelectedFaces: 
   m_SelectedEdges: []
@@ -1930,6 +1930,7 @@ Transform:
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 7107331805817395028}
   - {fileID: 6932888675150180560}
   - {fileID: 5206848401280964269}
   m_Father: {fileID: 0}
@@ -1952,11 +1953,20 @@ MonoBehaviour:
   dontDestroyOnPlatformSpawn: 1
   onlyVerticalMovement: 1
   canBePlacedOnOtherObjects: 0
+  canPlaceOtherObjectsOnRoof: 1
+  oneInRow: 0
+  destroyOtherObjectsInRow: 0
+  correctByGridWhileMoves: 1
+  fastPlacing: 0
+  fastPlace: {fileID: 7107331805817395028}
+  destroyByOtherObjectInRowThreshold: 0.5
   objectType: 4
   objectSize: {x: 11, y: 2.97, z: 1.18}
   objectCenter: {x: -4.94, y: 0.37, z: 0}
   materialsPreset: {fileID: 11400000, guid: 5dfe93c9b7dc90c44b645dd5462c112f, type: 2}
   verticalOffset: 1.35
+  boxCollider: {fileID: 0}
+  visualizeGrid: 0
 --- !u!65 &6581692632075131155
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -2098,6 +2108,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1.0000005, z: 1.0000005}
   m_Center: {x: 0, y: -0.0000009536749, z: -0.00000071525596}
+--- !u!1 &6059008702968054867
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7107331805817395028}
+  m_Layer: 7
+  m_Name: FastPlace
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7107331805817395028
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6059008702968054867}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1.4119997, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5487755288721411588}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6543826594436073884
 GameObject:
   m_ObjectHideFlags: 0

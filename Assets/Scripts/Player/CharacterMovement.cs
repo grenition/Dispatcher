@@ -15,6 +15,7 @@ public class CharacterMovement : MonoBehaviour
     public MovementData CurrentMovementData;
     public bool LockMovement { get; set; }
     public float HorizontalSpeed { get => horizontalSpeed; }
+    public bool IsGrounded { get => isGrounded; }
 
     //parameters
     [Header("Velocity")]
@@ -31,11 +32,13 @@ public class CharacterMovement : MonoBehaviour
     [SerializeField] private float minDistanceForHardMovement = 0.05f;
     [SerializeField] private bool hardMovement = false;
     [SerializeField] private float minMomentumToDetectFallingOrRising = 0.5f;
+    [SerializeField] private float detectGroundRayReserveDistance = 0.2f;
 
     //local values
     private CharacterController con;
     private int currentLine;
     private Vector3 physicsMomentum = Vector3.zero;
+    private bool isGrounded = false;
 
     #region Unity Events
     private void Awake()
@@ -58,6 +61,9 @@ public class CharacterMovement : MonoBehaviour
         movement += GetVerticalMomentum() * Time.deltaTime;
         //применяем движение к персонажу
         con.Move(movement);
+
+        //определяем землю
+        isGrounded = DetectGround();
     }
     #endregion
     #region Base
@@ -107,6 +113,10 @@ public class CharacterMovement : MonoBehaviour
         CurrentMovementData.movement = new Vector3(direction.x / horizontalSpeed, CurrentMovementData.movement.y, direction.z / horizontalSpeed);
        
         return direction;
+    }
+    private bool DetectGround()
+    {
+        return Physics.Raycast(transform.position + con.center, -Vector3.up, con.height / 2f + detectGroundRayReserveDistance);
     }
     private void UpdateLineBounds()
     {

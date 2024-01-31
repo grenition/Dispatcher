@@ -120,7 +120,7 @@ MonoBehaviour:
     count: 4
   - objectType: 5
     count: 100
-  levelSpeed: 4
+  levelSpeed: 8
   offset: 10
 --- !u!1 &6068088086652928566
 GameObject:

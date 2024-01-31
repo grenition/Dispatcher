@@ -28,6 +28,7 @@ public class PlayerController : MonoBehaviour
     [Header("Controls")]
     [SerializeField] private float clickDelay = 0.1f;
 
+
     //local values
     private CharacterMovement characterMovement;
     private CharacterAnimations characterAnimations;
@@ -37,17 +38,23 @@ public class PlayerController : MonoBehaviour
     private int playerFloor;
     private bool reservePositionIsDefined = false;
     private Vector3 reservePosition = Vector3.zero;
-
+    private bool placingTrigger = false;
+    private bool movementTriggerUp = false;
+    private bool movementTriggerDown = false;
 
 
     #region unity events
     private void OnEnable()
     {
         GridInteractions.OnNewGridObjectPlaced += OnCoinPlaced;
+        GameInput.MovementArea.OnUpSwipe += SetMovementTriggerUp;
+        GameInput.MovementArea.OnDownSwipe += SetMovementTriggerDown;
     }
     private void OnDisable()
     {
         GridInteractions.OnNewGridObjectPlaced -= OnCoinPlaced;
+        GameInput.MovementArea.OnUpSwipe -= SetMovementTriggerUp;
+        GameInput.MovementArea.OnDownSwipe -= SetMovementTriggerDown;
     }
     private void Awake()
     {
@@ -70,47 +77,77 @@ public class PlayerController : MonoBehaviour
     }
     private void Update()
     {
-        //CheckDoubleClick();
+        if (GameInput.PlacingArea.IsSinglePressed)
+            placingTrigger = true;
     }
     private void FixedUpdate()
     {
         playerFloor = GridInteractions.Instance.GetFloorId(transform.position);
 
-        CheckCoins();
+        if (!GameController.Preferences.coinsMovement)
+        {
+            //if (GameInput.MovementArea.IsPressed)
+            //{
+            //    Vector3 point = GridInteractions.Instance.GetWorldPositionFromSreenSpace(GameInput.MovementArea.TouchPosition);
+            //    MoveToTarget(point);
+            //}
+            if (movementTriggerUp)
+                MoveUp();
+            else if (movementTriggerDown)
+                MoveDown();
+            movementTriggerDown = false;
+            movementTriggerUp = false;
+        }
+        else
+        {
+            CheckCoins();
 
-        if (coins.Count > 0)
-        {
-            if (targetCoin == null || (targetCoin != null && transform.position.x - targetCoin.transform.position.x < 0f)
-                || !targetCoin.gameObject.activeSelf || targetCoin.CurrentFloor > playerFloor)
+            if (coins.Count > 0)
             {
-                targetCoin = GetTargetCoint(playerFloor);
+                if (targetCoin == null || (targetCoin != null && transform.position.x - targetCoin.transform.position.x < 0f)
+                    || !targetCoin.gameObject.activeSelf || targetCoin.CurrentFloor > playerFloor)
+                {
+                    targetCoin = GetTargetCoint(playerFloor);
+                }
+                if (targetCoin != null)
+                {
+                    MoveToTarget(targetCoin.transform.position);
+                }
             }
-            if (targetCoin != null)
+            if (targetCoin == null)
             {
-                MoveToTarget(targetCoin.transform.position);
+                if (!reservePositionIsDefined)
+                {
+                    reservePosition = transform.position;
+                    reservePositionIsDefined = true;
+                }
+                MoveToTarget(reservePosition);
             }
-        }
-        if (targetCoin == null)
-        {
-            if (!reservePositionIsDefined) {
-                reservePosition = transform.position;
-                reservePositionIsDefined = true;
-            }
-            MoveToTarget(reservePosition);
-        }
-        if (GameInput.PlacingArea.IsSinglePressed() && Time.time - GameInput.PlacingArea.PressTime > clickDelay 
-            && GridInteractions.Instance.CurrentInteractableObject == null)
-        {
-            if (GridInteractions.Instance.CheckPlaceAvailabilityForGridObject(masterCoin, out Vector3 point))
+
+            if (placingTrigger && GridInteractions.Instance.CurrentInteractableObject == null)
             {
-                GridObject coin = ObjectsPool.GetGridObject(ObjectType.coin);
-                coin.PlaceOnAwake = false;
-                GridInteractions.Instance.PlaceObjectSimple(coin, point);
+                placingTrigger = false;
+                if (GridInteractions.Instance.CheckPlaceAvailabilityForGridObject(masterCoin, out Vector3 point))
+                {
+                    GridObject coin = ObjectsPool.GetGridObject(ObjectType.coin);
+                    coin.PlaceOnAwake = false;
+                    GridInteractions.Instance.PlaceObjectSimple(coin, point);
+                }
             }
         }
     }
     #endregion
     #region local functions
+    private void SetMovementTriggerUp()
+    {
+        movementTriggerDown = false;
+        movementTriggerUp = true;
+    }
+    private void SetMovementTriggerDown()
+    {
+        movementTriggerUp = false;
+        movementTriggerDown = true;
+    }
     private void MoveToTarget(Vector3 target)
     {
         Vector3 dir = VectorMath.ExtractDotVector(target - transform.position, Vector3.forward);
@@ -123,6 +160,24 @@ public class PlayerController : MonoBehaviour
             dir = Vector3.ClampMagnitude(dir, obstaclesDetector.CheckingDistance);
         }
         characterMovement.GoNearestLine(transform.position + dir);
+    }
+    private void MoveUp()
+    {
+        if (obstaclesDetector != null)
+        {
+            if (obstaclesDetector.CheckEmptySpace(-Vector3.forward))
+                return;
+        }
+        characterMovement.GoUpperLine();
+    }
+    private void MoveDown()
+    {
+        if (obstaclesDetector != null)
+        {
+            if (obstaclesDetector.CheckEmptySpace(Vector3.forward))
+                return;
+        }
+        characterMovement.GoLowerLine();
     }
     private void CheckCoins()
     {
@@ -176,24 +231,7 @@ public class PlayerController : MonoBehaviour
         }
         coins.Add(coinObj);
     }
-    private GridObject GetNearestCoin()
-    {
-        List<GridObject> objects = ObjectsPool.GetActiveGridObjectOfType(ObjectType.coin);
 
-        GridObject minObject = null;
-        float minDistance = float.MaxValue;
-        float distance = 0f;
-        foreach(var obj in objects)
-        {
-            distance = transform.position.x - obj.transform.position.x;
-            if(distance > 0 && distance < minDistance)
-            {
-                minDistance = distance;
-                minObject = obj;
-            }
-        }
-        return minObject;
-    }
     #endregion
     #region global interactions
     public static void Die()

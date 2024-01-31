@@ -1304,7 +1304,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   CurrentMovementData:
     movement: {x: 0, y: 0, z: 0}
-  horizontalSpeed: 6
+  horizontalSpeed: 9
   gravity: 30
   highJumpForce: 17
   lines:
@@ -1316,6 +1316,7 @@ MonoBehaviour:
   minDistanceForHardMovement: 0.05
   hardMovement: 0
   minMomentumToDetectFallingOrRising: 0.5
+  detectGroundRayReserveDistance: 0.4
 --- !u!114 &7028014307894074080
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1346,9 +1347,7 @@ MonoBehaviour:
   minVerticalDistanceToSplitCoinsToLayers: 1
   minDistanceToMove: 2
   obstaclesDetector: {fileID: 5883256091892490864}
-  doubleClickInterval: 0.4
-  doubleClick: 0
-  lastClickTime: 0
+  clickDelay: 0.1
 --- !u!114 &5883256091892490864
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2412,7 +2411,7 @@ GameObject:
   - component: {fileID: 2502294188579149105}
   - component: {fileID: 2788005925342541395}
   - component: {fileID: 8545485688650959691}
-  m_Layer: 8
+  m_Layer: 2
   m_Name: Sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}

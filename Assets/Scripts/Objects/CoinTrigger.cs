@@ -26,6 +26,7 @@ public class CoinTrigger : MonoBehaviour
     private void OnOtherObjectInRowDeleted(Vector3 objPosition)
     {
         animator.CrossFade(idleStateName, 0f);
+        StopAllCoroutines();
         StartCoroutine(TranslationEnumerator(objPosition, transform.position, translationFromOtherRowTime));
     }
     private IEnumerator TranslationEnumerator(Vector3 fromPosition, Vector3 toPosition, float time)

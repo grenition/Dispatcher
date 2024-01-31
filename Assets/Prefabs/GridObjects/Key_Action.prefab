@@ -922,6 +922,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7303345664003178556}
   - component: {fileID: 4676584556732529920}
+  - component: {fileID: 6647976875320947999}
   m_Layer: 7
   m_Name: Key_Action
   m_TagString: Untagged
@@ -966,11 +967,37 @@ MonoBehaviour:
   canBePlacedOnOtherObjects: 0
   canPlaceOtherObjectsOnRoof: 1
   oneInRow: 0
+  destroyOtherObjectsInRow: 0
+  correctByGridWhileMoves: 0
+  destroyByOtherObjectInRowThreshold: 0.5
   objectType: 1
   objectSize: {x: 2.49, y: 2, z: 1.6}
   objectCenter: {x: 0, y: 0, z: 0}
   materialsPreset: {fileID: 11400000, guid: 5dfe93c9b7dc90c44b645dd5462c112f, type: 2}
   verticalOffset: 1
+  boxCollider: {fileID: 0}
+  visualizeGrid: 0
+--- !u!65 &6647976875320947999
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8020115031686801283}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &205144799600808242
 PrefabInstance:
   m_ObjectHideFlags: 0

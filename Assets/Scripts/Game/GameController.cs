@@ -4,16 +4,18 @@ using UnityEngine;
 
 public class GameController : MonoBehaviour
 {
-    public static GameController Instance;
+    public static GameController Instance { get; private set; }
     public static VoidEventHandler OnLevelStarted;
     public static VoidEventHandler OnLevelEnded;
     public static VoidEventHandler OnLobbyOpened;
     public static VoidEventHandler OnDie;
+    public static GamePreferences Preferences { get => Instance.gamePreferences; }
 
-    public float PlatformsSpeed { get => targetPlatformSpeed; set { targetPlatformSpeed = value; } }
+    public float PlatformsSpeed { get => currentPlatformSpeed; set { targetPlatformSpeed = value; } }
     public int CompletedLevels { get; private set; }
     public bool levelStarted { get; private set; }
 
+    [SerializeField] private GamePreferences gamePreferences;
     [SerializeField] private float targetPlatformSpeed = 1f;
     [SerializeField] private float lobbyPlatformSpeed = 2f;
     [SerializeField] private float lobbyBoostedPlatformSpeed = 7f;
@@ -28,6 +30,8 @@ public class GameController : MonoBehaviour
             Instance = this;
         savedSpeed = targetPlatformSpeed;
         CompletedLevels = PlayerPrefs.GetInt("CompletedLevel");
+
+        Application.targetFrameRate = (int)(Screen.currentResolution.refreshRateRatio.numerator / Screen.currentResolution.refreshRateRatio.denominator);
     }
     private void Start()
     {
@@ -39,17 +43,14 @@ public class GameController : MonoBehaviour
         if (Input.GetKey(KeyCode.P))
         {
             if (Input.GetKeyDown(KeyCode.Alpha1)){
-                PlayerPrefs.SetInt("CompletedLevel", 0);
-                Restart();
+                SetCurrentLevel(0);
             }
             else if (Input.GetKeyDown(KeyCode.Alpha2)){
-                PlayerPrefs.SetInt("CompletedLevel", 1);
-                Restart();
+                SetCurrentLevel(1);
             }
             else if (Input.GetKeyDown(KeyCode.Alpha3))
             {
-                PlayerPrefs.SetInt("CompletedLevel", 2);
-                Restart();
+                SetCurrentLevel(2);
             }
         }
     }
@@ -90,6 +91,8 @@ public class GameController : MonoBehaviour
         targetPlatformSpeed = lobbyPlatformSpeed;
         levelStarted = false;
         OnLobbyOpened?.Invoke();
+
+        SetCoinsMovementActive(Preferences.coinsMovement);
     }
     public void Die()
     {
@@ -111,5 +114,15 @@ public class GameController : MonoBehaviour
     {
         yield return new WaitForSecondsRealtime(holdTime);
         PlatformGenerator.GenerationType = generation;
+    }
+    public void SetCurrentLevel(int levelId)
+    {
+        PlayerPrefs.SetInt("CompletedLevel", levelId);
+        Restart();
+    }
+    public static void SetCoinsMovementActive(bool activeState)
+    {
+        Preferences.coinsMovement = activeState;
+        GameInput.MovementArea.SetActive(!activeState);
     }
 }

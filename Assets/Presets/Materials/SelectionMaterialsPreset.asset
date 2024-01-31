@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f7a57aa8e7d07b489369a4023bae505, type: 3}
   m_Name: SelectionMaterialsPreset
   m_EditorClassIdentifier: 
-  greenMaterial: {fileID: 2100000, guid: a89c1830044e1214480f3078de6d5a82, type: 2}
-  redMaterial: {fileID: 2100000, guid: 7f6353bed8d9ccd45b1127de6def5d3c, type: 2}
+  greenMaterial: {fileID: 2100000, guid: 0e6c3bed9a2d4034c9158dd1835ec3be, type: 2}
+  redMaterial: {fileID: 2100000, guid: ea06b398cc383d94ea569f5d868f3d4b, type: 2}

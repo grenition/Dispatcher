@@ -192,11 +192,20 @@ MonoBehaviour:
   dontDestroyOnPlatformSpawn: 0
   onlyVerticalMovement: 0
   canBePlacedOnOtherObjects: 0
+  canPlaceOtherObjectsOnRoof: 1
+  oneInRow: 0
+  destroyOtherObjectsInRow: 0
+  correctByGridWhileMoves: 1
+  fastPlacing: 1
+  fastPlace: {fileID: 0}
+  destroyByOtherObjectInRowThreshold: 0.5
   objectType: 3
   objectSize: {x: 1.4, y: 2.39, z: 1.23}
   objectCenter: {x: 0.05, y: 0.43, z: 0.07}
   materialsPreset: {fileID: 11400000, guid: 5dfe93c9b7dc90c44b645dd5462c112f, type: 2}
   verticalOffset: 1.14
+  boxCollider: {fileID: 0}
+  visualizeGrid: 0
 --- !u!65 &9189038394020098012
 BoxCollider:
   m_ObjectHideFlags: 0
